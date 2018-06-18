@@ -24,7 +24,7 @@ Opening the index.html file in the src folder of the frontend project will now o
 
 If you are planning on developing the frontend, typing:
 ```scala
-~reStart
+~fastOptJS
 ```
 will automatically compile to the latest javascript when you make code changes.
 ## Todo
