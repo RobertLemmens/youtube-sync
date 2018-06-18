@@ -4,37 +4,37 @@ import scala.scalajs.js
 import js.annotation._
 import org.scalajs.dom._
 
-trait Event extends js.Object {
+trait YTEvent extends js.Object {
   val target:  js.UndefOr[Player] = js.native
   val data: js.UndefOr[js.Object] = js.native
 }
 
-object Event {
+object YTEvent {
   def apply(
              target:  js.UndefOr[Player] = js.undefined,
              data: js.UndefOr[js.Object] = js.undefined
-           ): Event = {
+           ): YTEvent = {
     val result = js.Dynamic.literal()
     target.foreach(result.target = _)
     data.foreach(result.data = _)
-    result.asInstanceOf[Event]
+    result.asInstanceOf[YTEvent]
   }
 }
 
 
 //https://developers.google.com/youtube/
 trait PlayerEvents extends js.Object {
-  val onReady:  js.UndefOr[(Event) => Any] = js.native
-  val onStateChange: js.UndefOr[(Event) => Any] = js.native
-  val onError:  js.UndefOr[(Event) => Any] = js.native
+  val onReady:  js.UndefOr[(YTEvent) => Any] = js.native
+  val onStateChange: js.UndefOr[(YTEvent) => Any] = js.native
+  val onError:  js.UndefOr[(YTEvent) => Any] = js.native
 }
 
 
 object PlayerEvents {
   def apply(
-             onReady:  js.UndefOr[(Event) => Any] = js.undefined,
-             onStateChange: js.UndefOr[(Event) => Any] = js.undefined,
-             onError:  js.UndefOr[(Event) => Any] = js.undefined
+             onReady:  js.UndefOr[(YTEvent) => Any] = js.undefined,
+             onStateChange: js.UndefOr[(YTEvent) => Any] = js.undefined,
+             onError:  js.UndefOr[(YTEvent) => Any] = js.undefined
            ): PlayerEvents = {
     val result = js.Dynamic.literal()
     onReady.foreach(result.onReady = _)

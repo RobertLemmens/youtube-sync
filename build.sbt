@@ -1,3 +1,4 @@
+
 val scalaJsDomV = "0.9.5"
 val akkaHttpV = "10.1.1"
 val akkaV = "2.5.12"
@@ -11,26 +12,21 @@ lazy val frontend = project.in(file("frontend"))
     commonSettings,
     libraryDependencies ++= Seq(
       "org.scala-js" %%% "scalajs-dom" % scalaJsDomV,
-      "org.querki" %%% "jquery-facade" % "1.2"
+      "org.querki" %%% "jquery-facade" % "1.2",
+      "com.lihaoyi" %%% "upickle" % "0.5.1"
     ),
     scalaJSUseMainModuleInitializer := true
-  ).dependsOn(sharedJS)
+  )
 
 lazy val backend = project.in(file("backend"))
   .settings(
     commonSettings,
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-http" % akkaHttpV,
-      "com.typesafe.akka" %% "akka-stream" % akkaV
+      "com.typesafe.akka" %% "akka-stream" % akkaV,
+      "com.lihaoyi" %%% "upickle" % "0.5.1"
     )
   )
-
-lazy val shared = (crossProject.crossType(CrossType.Pure) in file ("shared"))
-  .settings(
-    scalaVersion := scalaV
-  )
-
-lazy val sharedJS = shared.js
 
 lazy val root =
   project.in(file("."))
