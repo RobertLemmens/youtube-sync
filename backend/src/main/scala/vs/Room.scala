@@ -55,8 +55,12 @@ object Room {
             val next = nowPlaying match {
               case Some(x) =>
                 playlist -= x
+                if(playlist.isEmpty)
+                  playlist += (false -> "xy_NKN75Jhw")
                 playlist.head
               case None =>
+                if(playlist.isEmpty)
+                  playlist += (false -> "xy_NKN75Jhw")
                 playlist.head
             }
             playlist = playlist.filterNot(_ == next) ++ Set(true -> next._2)
@@ -65,6 +69,9 @@ object Room {
           }
           else if(msg.message.equals("/playlist")) {
             dispatch(Protocol.PlaylistUpdate(playlist))
+          }
+          else if(msg.message.equals("/members")) {
+            dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
           }
           else
             dispatch(msg.toChatMessage)
@@ -84,7 +91,6 @@ object Room {
       def sendAdminMessage(msg: String): Unit = dispatch(Protocol.ChatMessage("admin", msg))
       def dispatch(msg: Protocol.Message): Unit = subscribers.foreach(_._2 ! msg) // send msg to all actorref
       def members = subscribers.map(_._1).toSeq
-
     }))
 
     def roomInSink(sender: String) = Sink.actorRef[ChatEvent](roomActor, ParticipantLeft(sender))
@@ -95,7 +101,7 @@ object Room {
           .map(ReceivedMessage(sender, _))
           .to(roomInSink(sender))
         val out = Source
-          .actorRef[Protocol.ChatMessage](1, OverflowStrategy.fail)
+          .actorRef[Protocol.ChatMessage](64, OverflowStrategy.fail)
           .mapMaterializedValue(roomActor ! NewParticipant(sender, _))
 
         Flow.fromSinkAndSource(in, out)

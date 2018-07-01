@@ -14,30 +14,48 @@ import scala.concurrent.duration._
 import scala.util.Failure
 class WebService(implicit system: ActorSystem) extends Directives{
 
-  val theRoom = Room.create(system)
+  var rooms = Set.empty[(String, Room)]
   import system.dispatcher
-  system.scheduler.schedule(15.seconds, 15.seconds) {
-    theRoom.injectMessage(StatusRequest(sender = "server"))
-    theRoom.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
-  }
+//  val theRoom = Room.create(system) // moet dynamic
+//
+//  system.scheduler.schedule(15.seconds, 15.seconds) {
+//    theRoom.injectMessage(StatusRequest(sender = "server"))
+//    theRoom.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
+//  }
 
   def route = {
     get {
       pathSingleSlash {
         getFromResource("web/index.html")
       } ~ path("chat") {
-        parameter('name) { name =>
-          handleWebSocketMessages(websocketRoomFlow(sender = name))
+        parameter('name, 'room) { (name, room) =>
+          rooms.find(_._1 == room) match {
+            case Some((s,r)) =>
+              handleWebSocketMessages(websocketRoomFlow(sender = name, room = (s,r)))
+            case None =>
+              handleWebSocketMessages(websocketRoomFlow(sender = name, room = createRoom(room)))
+          }
+          // handleWebSocketMessages(websocketRoomFlow(sender = name, roomName = room))
         }
       }
     }
   }
 
-  def websocketRoomFlow(sender:String): Flow[Message, Message, Any] = Flow[Message]
+  def createRoom(name: String): (String, Room) = {
+    val room = Room.create(system)
+    rooms += (name -> room)
+    system.scheduler.schedule(15.seconds, 15.seconds) {
+      room.injectMessage(StatusRequest(sender = "server"))
+      room.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
+    }
+    rooms.find(_._1 == name).get // unsafe
+  }
+
+  def websocketRoomFlow(sender:String, room: (String, Room)): Flow[Message, Message, Any] = Flow[Message]
     .collect {
       case TextMessage.Strict(msg) => msg
     }
-    .via(theRoom.roomInFlow(sender))
+    .via(room._2.roomInFlow(sender))
     .map {
       case msg: Protocol.Message => TextMessage.Strict(write(msg))
     }

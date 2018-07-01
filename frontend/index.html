@@ -11,9 +11,20 @@
 
 </head>
 <body>
-<div id="container" style="position: relative; width: 100%; height: 0; padding-bottom: 56%">
-    <div id="player" style="position: absolute;"></div>
+<div class="row">
+    <div class="col s10">
+        <div id="container" style="position: relative; width: 100%; height: 0; padding-bottom: 56%">
+            <div id="player" style="position: absolute;"></div>
+        </div>
+    </div>
+    <div class="col s2">
+        <p class="flow-text">Playlist: </p>
+        <ul id="playlistList" class="collection">
+            <li class="collection-item">Empty</li>
+        </ul>
+    </div>
 </div>
+
 <nav>
     <div class="nav-wrapper  grey darken-4">
         <a href="#" class="brand-logo right red-text text-accent-4">V-Sync</a>
@@ -26,7 +37,8 @@
 </nav>
 <div class="row">
     <div class="col s4">
-        <input id="userNameField" type="text">
+        <input id="serverNameField" type="text" placeholder="servername">
+        <input id="userNameField" type="text" placeholder="username">
         <button id="joinButton" class="btn waves-effect waves-light red accent-4" type="button">Join server</button>
     </div>
     <div class="col s4">
@@ -36,19 +48,13 @@
         </button>
     </div>
     <div class="col s4">
-        <p id="followP"> </p>
-        <input id="followField" type="text">
-        <button id="followButton" class="btn waves-effect waves-light red accent-4" type="button">Follow</button>
+        <p class="flow-text" id="followP"></p>
     </div>
 </div>
 <div class="row">
     <div class="col s2">
         <p class="flow-text">Users: </p>
         <textarea id="usersArea" style="height: 150px"></textarea>
-    </div>
-    <div class="col s4">
-        <p class="flow-text">Playlist: </p>
-        <textarea id="playlistArea" style="height: 150px"></textarea>
     </div>
     <div class="col s6">
         <p class="flow-text">Log: </p>

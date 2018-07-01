@@ -19,7 +19,6 @@ object Frontend {
   val nextButton = dom.document.getElementById("nextButton").asInstanceOf[HTMLButtonElement]
 
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
-  val followButton = dom.document.getElementById("followButton").asInstanceOf[HTMLButtonElement]
 
   var following = ""
   // true = now playing, or next to play when Play is called
@@ -51,27 +50,28 @@ object Frontend {
   }
 
   def setupUI(player: Player): Unit = {
-    followButton.onclick = {event: org.scalajs.dom.raw.Event =>
-      val followField = dom.document.getElementById("followField").asInstanceOf[HTMLInputElement]
-      val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
-      followP.textContent = "Following: " + followField.value
-      following = followField.value
-    }
+//    followButton.onclick = {event: org.scalajs.dom.raw.Event =>
+//      val followField = dom.document.getElementById("followField").asInstanceOf[HTMLInputElement]
+//      val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
+//      followP.textContent = "Following: " + followField.value
+//      following = followField.value
+//    }
     joinButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val userNameField = dom.document.getElementById("userNameField").asInstanceOf[HTMLInputElement]
-      joinChat(userNameField.value, player)
+      val serverNameField = dom.document.getElementById("serverNameField").asInstanceOf[HTMLInputElement]
+      joinChat(userNameField.value, serverNameField.value, player)
     }
   }
 
-  def joinChat(name: String, player: Player): Unit = {
+  def joinChat(name: String, room: String, player: Player): Unit = {
     joinButton.disabled = true
 
     appendLog(s"Trying to join as '$name'...")
-    val chat = new WebSocket(s"ws://localhost:8080/chat?name=$name")
+    val chat = new WebSocket(s"ws://localhost:8080/chat?name=$name&room=$room")
     chat.onopen = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog("Connection succesfull")
       sendMessageButton.disabled = false
-      chat.send("/playlist")
+
 
       val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
       chatField.focus()
@@ -102,7 +102,8 @@ object Frontend {
         appendLog("sending server: " + videoId)
         chat.send("/add false " + videoId)
       }
-
+      chat.send("/playlist")
+      chat.send("/members")
       event
     }
     chat.onerror = { (event: org.scalajs.dom.raw.Event) ⇒
@@ -120,7 +121,9 @@ object Frontend {
         case Protocol.Joined(member, allMembers) ⇒
           updateUserList(allMembers)
           appendLog(s"$member joined!")
-        case Protocol.Left(member, _)              ⇒ appendPar(document.body,s"$member left!")
+        case Protocol.Left(member, allMembers) ⇒
+          updateUserList(allMembers)
+          appendPar(document.body,s"$member left!")
         case Protocol.PlayVideo(sender) =>
           appendLog(s"$sender started playback")
           player.playVideo()
@@ -139,7 +142,7 @@ object Frontend {
           chat.send("/status " + player.getPlayerState() + " " + player.getCurrentTime() + " " + player.getVideoUrl())
         case Protocol.StatusMessage(sender, status, time, url) =>
           appendLog(s"$sender status is $status at $time for video $url")
-          appendLog("following : " + following)
+          appendLog("Leader: " + following)
           if(sender.equals(following)) {
             if(checkForUpdate(player, status, time, url)){
               appendLog("Doing an update")
@@ -155,6 +158,11 @@ object Frontend {
           player.loadVideoById(videoId, 0.0, "large")
         case Protocol.PlaylistUpdate(newPlayList) =>
           updatePlayList(newPlayList)
+        case Protocol.MemberStatus(members) => {
+          following = members.find(_._1).get._2
+          val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
+          followP.textContent = "Leader: " + following
+        }
 
       }
     }
@@ -263,12 +271,21 @@ object Frontend {
 
   def updatePlayList(newList: Set[(Boolean, String)]): Unit = {
     playlist = newList
-    val playlistArea = dom.document.getElementById("playlistArea").asInstanceOf[HTMLTextAreaElement]
-    playlistArea.value = ""
+    val playlistList = dom.document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
+    playlistList.innerHTML = ""
     playlist.foreach{
       item =>
-        if(item._1) playlistArea.value += "Now playing " else playlistArea.value += "--- "
-        playlistArea.value += (item._2 +"\n")
+        val liNode = document.createElement("li")
+
+        if(item._1) {
+          liNode.appendChild(document.createTextNode("Now playing " + item._2))
+          liNode.setAttribute("class", "collection-item active")
+        }
+        else {
+          liNode.appendChild(document.createTextNode("--- " + item._2))
+          liNode.setAttribute("class", "collection-item")
+        }
+        playlistList.appendChild(liNode)
     }
   }
 
