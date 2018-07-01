@@ -1,9 +1,9 @@
-# Sync youtube playback between browsers
+# :clock130: Sync youtube playback between browsers :clock10:
 This is an application that syncs youtube playback between connected users using websockets. The entire thing is build with scala. Akka on the backend and ScalaJS on the frontend side. 
 
 ## Usage
+### Developing
 First fire up a SBT session in the root folder. Then:
-
 ```scala
 project backend
 ```
@@ -11,7 +11,11 @@ followed by:
 ```scala
 reStart
 ```
-The backend should now be running. Next compile the frontend:
+The backend should now be running. The frontend will also be build and served through akka.
+Access the site by going to localhost:8080
+
+
+If you want to build only the JS files do:
 ```scala
 project frontend
 ```
@@ -19,14 +23,19 @@ followed by:
 ```scala
 fastOptJS
 ```
+You will need a copy of the index.html in the resource folder of the backend project and point that copy towards the build JS if you want to build the frontend without the backend.
 
-Opening the index.html file in the src folder of the frontend project will now open the latest compiled version. Enter a name and connect to the server to start adding video's. 
-
-If you are planning on developing the frontend, typing:
+### Build a jar
+First fire up a SBT session in the root folder. Then:
 ```scala
-~fastOptJS
+project backend
 ```
-will automatically compile to the latest javascript when you make code changes.
+followed by:
+```scala
+assembly
+```
+This will build a standalone jar ready for deployment.
+
 ## Todo
-* Create a better build. One that starts backend and serves the generated frontend HTML through the backend for easy deployment.
+* DONE -  Create a better build. One that starts backend and serves the generated frontend HTML through the backend for easy deployment.
 * Improve functionality
