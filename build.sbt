@@ -25,7 +25,13 @@ lazy val backend = project.in(file("backend"))
       "com.typesafe.akka" %% "akka-http" % akkaHttpV,
       "com.typesafe.akka" %% "akka-stream" % akkaV,
       "com.lihaoyi" %%% "upickle" % "0.5.1"
-    )
+    ),
+    resourceGenerators in Compile += Def.task {
+      val f1 = (fastOptJS in Compile in frontend).value
+      val f1SourceMap = f1.data.getParentFile / (f1.data.getName + ".map")
+      Seq(f1.data, f1SourceMap)
+    }.taskValue,
+    watchSources ++= (watchSources in frontend).value
   )
 
 lazy val root =

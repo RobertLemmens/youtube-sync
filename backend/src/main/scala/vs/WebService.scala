@@ -16,37 +16,37 @@ class WebService(implicit system: ActorSystem) extends Directives{
 
   var rooms = Set.empty[(String, Room)]
   import system.dispatcher
-//  val theRoom = Room.create(system) // moet dynamic
-//
-//  system.scheduler.schedule(15.seconds, 15.seconds) {
-//    theRoom.injectMessage(StatusRequest(sender = "server"))
-//    theRoom.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
-//  }
+  //  val theRoom = Room.create(system) // moet dynamic
+  //
+  //  system.scheduler.schedule(15.seconds, 15.seconds) {
+  //    theRoom.injectMessage(StatusRequest(sender = "server"))
+  //    theRoom.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
+  //  }
 
   def route = {
     get {
       pathSingleSlash {
         getFromResource("web/index.html")
-      } ~ path("chat") {
-        parameter('name, 'room) { (name, room) =>
-          rooms.find(_._1 == room) match {
-            case Some((s,r)) =>
-              handleWebSocketMessages(websocketRoomFlow(sender = name, room = (s,r)))
-            case None =>
-              handleWebSocketMessages(websocketRoomFlow(sender = name, room = createRoom(room)))
+      } ~
+        path("frontend-fastopt.js")(getFromResource("frontend-fastopt.js")) ~
+        path("chat") {
+          parameter('name, 'room) { (name, room) =>
+            rooms.find(_._1 == room) match {
+              case Some((s,r)) =>
+                handleWebSocketMessages(websocketRoomFlow(sender = name, room = (s,r)))
+              case None =>
+                handleWebSocketMessages(websocketRoomFlow(sender = name, room = createRoom(room)))
+            }
           }
-          // handleWebSocketMessages(websocketRoomFlow(sender = name, roomName = room))
         }
-      }
     }
   }
 
   def createRoom(name: String): (String, Room) = {
     val room = Room.create(system)
     rooms += (name -> room)
-    system.scheduler.schedule(15.seconds, 15.seconds) {
+    system.scheduler.schedule(5.seconds, 5.seconds) {
       room.injectMessage(StatusRequest(sender = "server"))
-      room.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
     }
     rooms.find(_._1 == name).get // unsafe
   }

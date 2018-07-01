@@ -5,7 +5,7 @@ import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 import protocols.Protocol
 
-case class Subscriber(name: String, var status: PlayerStatus, isLeader: Boolean)
+case class Subscriber(name: String, var status: PlayerStatus, var isLeader: Boolean)
 case class PlayerStatus(playerStatus: Int, currentTime: Double, videoUrl: String)
 
 trait Room {
@@ -25,12 +25,11 @@ object Room {
           context.watch(subscriber)
           if(subscribers.isEmpty) {
             subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = true) -> subscriber)
-            dispatch(Protocol.Joined(name, members.map(_.name)))
+            dispatch(Protocol.Joined(name, subscribers.map(c => c._1.isLeader -> c._1.name)))
           }
           else{
             subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = false) -> subscriber)
-            dispatch(Protocol.Joined(name, members.map(_.name)))
-            //   dispatch(Protocol.StatusUpdate(leader.status.playerStatus, leader.status.currentTime, leader.status.videoUrl))
+            dispatch(Protocol.Joined(name, subscribers.map(c => c._1.isLeader -> c._1.name)))
           }
         case msg: ReceivedMessage =>
           println("Received: " + msg.message)
@@ -63,7 +62,7 @@ object Room {
                   playlist += (false -> "xy_NKN75Jhw")
                 playlist.head
             }
-            playlist = playlist.filterNot(_ == next) ++ Set(true -> next._2)
+            playlist = Set(true -> next._2) ++ playlist.filterNot(_ == next)
             dispatch(msg.toLoadMessage(next._2))
             dispatch(Protocol.PlaylistUpdate(playlist))
           }
@@ -84,7 +83,10 @@ object Room {
           val entry @ (name, ref) = subscribers.find(_._1.name == person).get
           ref ! Status.Success(Unit)
           subscribers -= entry
-          dispatch(Protocol.Left(person, members.map(_.name)))
+          if(name.isLeader && subscribers.nonEmpty)
+            subscribers.head._1.isLeader = true // if the leader left, set the next in the list as leader
+
+          dispatch(Protocol.Left(person, subscribers.map(c => c._1.isLeader -> c._1.name)))
         case Terminated(sub) =>
           subscribers = subscribers.filterNot(_._2 == sub)
       }

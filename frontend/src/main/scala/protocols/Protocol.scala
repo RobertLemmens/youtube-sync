@@ -18,8 +18,8 @@ object Protocol {
   )
 
   case class ChatMessage(sender: String, message: String) extends Message
-  case class Joined(member: String, allMembers: Seq[String]) extends Message
-  case class Left(member: String, allMembers: Seq[String]) extends Message
+  case class Joined(member: String, allMembers: Set[(Boolean, String)]) extends Message
+  case class Left(member: String, allMembers: Set[(Boolean, String)]) extends Message
   case class PlayVideo(sender: String) extends Message
   case class PauseVideo(sender: String) extends Message
   case class AddVideo(sender: String, videoUrl: String) extends Message

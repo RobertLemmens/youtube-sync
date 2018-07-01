@@ -4,9 +4,7 @@ import org.scalajs.dom
 import dom.{KeyboardEvent, document, html}
 
 import scala.scalajs.js
-import org.querki.jquery._
 import org.scalajs.dom.raw._
-import org.w3c.dom.html.HTMLOptionElement
 import protocols.Protocol
 import upickle.default._
 
@@ -50,12 +48,12 @@ object Frontend {
   }
 
   def setupUI(player: Player): Unit = {
-//    followButton.onclick = {event: org.scalajs.dom.raw.Event =>
-//      val followField = dom.document.getElementById("followField").asInstanceOf[HTMLInputElement]
-//      val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
-//      followP.textContent = "Following: " + followField.value
-//      following = followField.value
-//    }
+    //    followButton.onclick = {event: org.scalajs.dom.raw.Event =>
+    //      val followField = dom.document.getElementById("followField").asInstanceOf[HTMLInputElement]
+    //      val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
+    //      followP.textContent = "Following: " + followField.value
+    //      following = followField.value
+    //    }
     joinButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val userNameField = dom.document.getElementById("userNameField").asInstanceOf[HTMLInputElement]
       val serverNameField = dom.document.getElementById("serverNameField").asInstanceOf[HTMLInputElement]
@@ -67,7 +65,7 @@ object Frontend {
     joinButton.disabled = true
 
     appendLog(s"Trying to join as '$name'...")
-    val chat = new WebSocket(s"ws://localhost:8080/chat?name=$name&room=$room")
+    val chat = new WebSocket(getWebsocketUri(dom.document, name, room))
     chat.onopen = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog("Connection succesfull")
       sendMessageButton.disabled = false
@@ -138,17 +136,12 @@ object Frontend {
           playlist += (false -> url)
           updatePlayList(playlist)
         case Protocol.StatusRequest(sender) =>
-          appendLog(s"$sender requested status update, sending " + player.getPlayerState() + " " + player.getCurrentTime())
           chat.send("/status " + player.getPlayerState() + " " + player.getCurrentTime() + " " + player.getVideoUrl())
         case Protocol.StatusMessage(sender, status, time, url) =>
-          appendLog(s"$sender status is $status at $time for video $url")
-          appendLog("Leader: " + following)
           if(sender.equals(following)) {
             if(checkForUpdate(player, status, time, url)){
               appendLog("Doing an update")
               updatePlayer(player, status, time ,url)
-            } else {
-              appendLog("No updated needed")
             }
           }
         case Protocol.StatusUpdate(status, time, url) =>
@@ -159,9 +152,7 @@ object Frontend {
         case Protocol.PlaylistUpdate(newPlayList) =>
           updatePlayList(newPlayList)
         case Protocol.MemberStatus(members) => {
-          following = members.find(_._1).get._2
-          val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
-          followP.textContent = "Leader: " + following
+          updateUserList(members)
         }
 
       }
@@ -206,7 +197,6 @@ object Frontend {
       true
     }
     else {
-      appendLog("No update needed")
       false
     }
 
@@ -263,10 +253,21 @@ object Frontend {
     logNode.value += "\n"+text
   }
 
-  def updateUserList(members: Seq[String]): Unit = {
-    val userAreaNode = dom.document.getElementById("usersArea").asInstanceOf[HTMLTextAreaElement]
-    userAreaNode.value = ""
-    members.foreach( name => userAreaNode.value += name +"\n")
+  def updateUserList(members: Set[(Boolean, String)]): Unit = {
+    val userList = dom.document.getElementById("userList").asInstanceOf[HTMLUListElement]
+    userList.innerHTML = ""
+    members.foreach{
+      name =>
+        val liNode = document.createElement("li")
+        if(name._1) {
+          following = name._2
+          liNode.setAttribute("class", "collection-item active red accent-4")
+        }
+        else
+          liNode.setAttribute("class", "collection-item")
+        liNode.appendChild(document.createTextNode(name._2))
+        userList.appendChild(liNode)
+    }
   }
 
   def updatePlayList(newList: Set[(Boolean, String)]): Unit = {
@@ -279,7 +280,7 @@ object Frontend {
 
         if(item._1) {
           liNode.appendChild(document.createTextNode("Now playing " + item._2))
-          liNode.setAttribute("class", "collection-item active")
+          liNode.setAttribute("class", "collection-item active red accent-4")
         }
         else {
           liNode.appendChild(document.createTextNode("--- " + item._2))
@@ -287,6 +288,12 @@ object Frontend {
         }
         playlistList.appendChild(liNode)
     }
+  }
+
+  def getWebsocketUri(document: Document, name: String, room: String): String = {
+    val wsProtocol = if (dom.document.location.protocol == "https:") "wss" else "ws"
+
+    s"$wsProtocol://${dom.document.location.host}/chat?name=$name&room=$room"
   }
 
 }
