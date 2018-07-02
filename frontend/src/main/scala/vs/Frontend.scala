@@ -10,7 +10,6 @@ import upickle.default._
 
 object Frontend {
 
-  val joinButton = dom.document.getElementById("joinButton").asInstanceOf[HTMLButtonElement]
   val addButton = dom.document.getElementById("addButton").asInstanceOf[HTMLButtonElement]
   val playButton = dom.document.getElementById("playButton").asInstanceOf[HTMLButtonElement]
   val pauseButton = dom.document.getElementById("pauseButton").asInstanceOf[HTMLButtonElement]
@@ -20,6 +19,8 @@ object Frontend {
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
 
+  val connectButton = dom.document.getElementById("connectButton").asInstanceOf[HTMLButtonElement]
+
 
   var following = ""
   // true = now playing, or next to play when Play is called
@@ -27,6 +28,21 @@ object Frontend {
 
   def main(args: Array[String]): Unit = {
     addPlayer(document.body)
+    hideMain()
+  }
+
+  def hideLogin(): Unit = {
+    document.getElementById("login").setAttribute("style", "display: none;")
+  }
+
+  def hideMain(): Unit = {
+    document.getElementById("mainNav").setAttribute("style", "display: none;")
+    document.getElementById("mainRow1").setAttribute("style", "display: none;")
+  }
+
+  def showMain(): Unit = {
+    document.getElementById("mainNav").removeAttribute("style")
+    document.getElementById("mainRow1").removeAttribute("style")
   }
 
   def addClickedMessage(player: Player): Unit = {
@@ -48,21 +64,24 @@ object Frontend {
   }
 
   def setupUI(player: Player): Unit = {
-    joinButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
-      val userNameField = dom.document.getElementById("userNameField").asInstanceOf[HTMLInputElement]
-      val serverNameField = dom.document.getElementById("serverNameField").asInstanceOf[HTMLInputElement]
+    connectButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
+      val userNameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
+      val serverNameField = dom.document.getElementById("room").asInstanceOf[HTMLInputElement]
       joinChat(userNameField.value, serverNameField.value, player)
+      hideLogin()
+      showMain()
     }
   }
 
   def joinChat(name: String, room: String, player: Player): Unit = {
-    joinButton.disabled = true
-
     appendLog(s"Trying to join as '$name'...")
     val chat = new WebSocket(getWebsocketUri(dom.document, name, room))
     chat.onopen = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog("Connection succesfull")
       sendMessageButton.disabled = false
+      val roomLabelP = document.getElementById("roomLabel").asInstanceOf[HTMLParagraphElement]
+      roomLabelP.innerHTML = ""
+      roomLabelP.appendChild(document.createTextNode(s"Room: $room"))
 
 
       val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
@@ -97,14 +116,14 @@ object Frontend {
       enableAutoPlayButton.onclick = {
         event: org.scalajs.dom.raw.Event =>
           chat.send("/settings true")
-          enableAutoPlayButton.disabled = true
-          disableAutoPlayButton.disabled = false
+          enableAutoPlayButton.setAttribute("disabled", "true")
+          disableAutoPlayButton.removeAttribute("disabled")
       }
       disableAutoPlayButton.onclick = {
         event: org.scalajs.dom.raw.Event =>
           chat.send("/settings false")
-          disableAutoPlayButton.disabled = true
-          enableAutoPlayButton.disabled = false
+          disableAutoPlayButton.setAttribute("disabled", "true")
+          enableAutoPlayButton.removeAttribute("disabled")
       }
 
       chat.send("/playlist")
@@ -113,7 +132,6 @@ object Frontend {
     }
     chat.onerror = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog(s"Failed: code: ${event.toString}")
-      joinButton.disabled = false
       sendMessageButton.disabled = true
     }
     chat.onmessage = { (event: MessageEvent) ⇒
@@ -161,12 +179,20 @@ object Frontend {
         case Protocol.MemberStatus(members) => {
           updateUserList(members)
         }
+        case Protocol.SettingsUpdate(setting) => {
+          if(setting) {
+            enableAutoPlayButton.setAttribute("disabled", "true")
+            disableAutoPlayButton.removeAttribute("disabled")
+          } else {
+            disableAutoPlayButton.setAttribute("disabled", "true")
+            enableAutoPlayButton.removeAttribute("disabled")
+          }
+        }
 
       }
     }
     chat.onclose = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog("Connection to chat lost. You can try to rejoin manually.")
-      joinButton.disabled = false
       sendMessageButton.disabled = true
     }
   }
@@ -266,7 +292,7 @@ object Frontend {
         val liNode = document.createElement("li")
         if(name._1) {
           following = name._2
-          liNode.setAttribute("class", "collection-item active red accent-4")
+          liNode.setAttribute("class", "collection-item active red")
         }
         else
           liNode.setAttribute("class", "collection-item")
@@ -285,7 +311,7 @@ object Frontend {
 
         if(item._1) {
           liNode.appendChild(document.createTextNode("Now playing " + item._2))
-          liNode.setAttribute("class", "collection-item active red accent-4")
+          liNode.setAttribute("class", "collection-item active red")
         }
         else {
           liNode.appendChild(document.createTextNode("--- " + item._2))

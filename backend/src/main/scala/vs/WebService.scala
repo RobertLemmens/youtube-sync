@@ -28,6 +28,8 @@ class WebService(implicit system: ActorSystem) extends Directives{
       pathSingleSlash {
         getFromResource("web/index.html")
       } ~
+        path("RomanticBeach.ttf")(getFromResource("RomanticBeach.ttf")) ~
+        path("img1.jpg")(getFromResource("img1.jpg")) ~
         path("frontend-fastopt.js")(getFromResource("frontend-fastopt.js")) ~
         path("chat") {
           parameter('name, 'room) { (name, room) =>
