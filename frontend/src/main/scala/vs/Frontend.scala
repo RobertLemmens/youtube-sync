@@ -128,7 +128,7 @@ object Frontend {
           appendLog(s"$member joined!")
         case Protocol.Left(member, allMembers) ⇒
           updateUserList(allMembers)
-          appendPar(document.body,s"$member left!")
+          appendLog(s"$member left!")
         case Protocol.PlayVideo(sender) =>
           appendLog(s"$sender started playback")
           player.playVideo()
@@ -246,12 +246,12 @@ object Frontend {
 
   }
 
-  def appendPar(targetNode: dom.Node, text: String): Unit = {
-    val parNode = document.createElement("p")
-    val textNode = document.createTextNode(text)
-    parNode.appendChild(textNode)
-    targetNode.appendChild(parNode)
-  }
+//  def appendPar(targetNode: dom.Node, text: String): Unit = {
+//    val parNode = document.createElement("p")
+//    val textNode = document.createTextNode(text)
+//    parNode.appendChild(textNode)
+//    targetNode.appendChild(parNode)
+//  }
 
   def appendLog(text: String): Unit = {
     val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
