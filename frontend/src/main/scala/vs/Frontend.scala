@@ -15,8 +15,11 @@ object Frontend {
   val playButton = dom.document.getElementById("playButton").asInstanceOf[HTMLButtonElement]
   val pauseButton = dom.document.getElementById("pauseButton").asInstanceOf[HTMLButtonElement]
   val nextButton = dom.document.getElementById("nextButton").asInstanceOf[HTMLButtonElement]
-
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
+
+  val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
+  val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
+
 
   var following = ""
   // true = now playing, or next to play when Play is called
@@ -39,21 +42,12 @@ object Frontend {
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag)
     targetNode.appendChild(firstScriptTag)
 
-    // add a first video
-    //playlist += (true -> "xy_NKN75Jhw")
-
     (org.scalajs.dom.window.asInstanceOf[js.Dynamic]).onYouTubeIframeAPIReady = () => {
       createPlayer()
     }
   }
 
   def setupUI(player: Player): Unit = {
-    //    followButton.onclick = {event: org.scalajs.dom.raw.Event =>
-    //      val followField = dom.document.getElementById("followField").asInstanceOf[HTMLInputElement]
-    //      val followP = dom.document.getElementById("followP").asInstanceOf[HTMLParagraphElement]
-    //      followP.textContent = "Following: " + followField.value
-    //      following = followField.value
-    //    }
     joinButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val userNameField = dom.document.getElementById("userNameField").asInstanceOf[HTMLInputElement]
       val serverNameField = dom.document.getElementById("serverNameField").asInstanceOf[HTMLInputElement]
@@ -100,6 +94,19 @@ object Frontend {
         appendLog("sending server: " + videoId)
         chat.send("/add false " + videoId)
       }
+      enableAutoPlayButton.onclick = {
+        event: org.scalajs.dom.raw.Event =>
+          chat.send("/settings true")
+          enableAutoPlayButton.disabled = true
+          disableAutoPlayButton.disabled = false
+      }
+      disableAutoPlayButton.onclick = {
+        event: org.scalajs.dom.raw.Event =>
+          chat.send("/settings false")
+          disableAutoPlayButton.disabled = true
+          enableAutoPlayButton.disabled = false
+      }
+
       chat.send("/playlist")
       chat.send("/members")
       event
@@ -199,7 +206,6 @@ object Frontend {
     else {
       false
     }
-
   }
 
   def updatePlayer(player: Player, status: Int, time: Double, url: String): Unit = {
@@ -221,7 +227,6 @@ object Frontend {
     } else if(player.getCurrentTime() != time) {
       player.seekTo(time, true)
     }
-
   }
 
   def onPlayerReady(event: YTEvent): Unit = {

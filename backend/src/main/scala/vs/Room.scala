@@ -19,6 +19,7 @@ object Room {
     val roomActor = system.actorOf(Props(new Actor {
       var subscribers = Set.empty[(Subscriber, ActorRef)]
       var playlist = Set.empty[(Boolean, String)]
+      var autoplay = false
 
       override def receive: Receive = {
         case NewParticipant(name, subscriber) =>
@@ -40,6 +41,9 @@ object Room {
           else if(msg.message.contains("/status")) {
             val splittedMsg = msg.message.split(" ")
             subscribers.find(_._1.name == msg.sender).get._1.status = PlayerStatus(splittedMsg(1).toInt, splittedMsg(2).toDouble, splittedMsg(3))
+            if(autoplay && subscribers.find(_._1.name == msg.sender).get._1.isLeader && splittedMsg(1).toInt == 0) { // autoplay the next video
+              nextVideo(msg)
+            }
             dispatch(msg.toStatusMessage(subscribers.find(_._1.name == msg.sender).get._1.status))
           }
           else if(msg.message.contains("/add")) {
@@ -49,28 +53,16 @@ object Room {
             dispatch(msg.toAddMessage)
           }
           else if(msg.message.equals("/next")){
-
-            val nowPlaying = playlist.find(_._1)
-            val next = nowPlaying match {
-              case Some(x) =>
-                playlist -= x
-                if(playlist.isEmpty)
-                  playlist += (false -> "xy_NKN75Jhw")
-                playlist.head
-              case None =>
-                if(playlist.isEmpty)
-                  playlist += (false -> "xy_NKN75Jhw")
-                playlist.head
-            }
-            playlist = Set(true -> next._2) ++ playlist.filterNot(_ == next)
-            dispatch(msg.toLoadMessage(next._2))
-            dispatch(Protocol.PlaylistUpdate(playlist))
+            nextVideo(msg)
           }
           else if(msg.message.equals("/playlist")) {
             dispatch(Protocol.PlaylistUpdate(playlist))
           }
           else if(msg.message.equals("/members")) {
             dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
+          }
+          else if(msg.message.contains("/settings")) {
+            autoplay = msg.message.split(" ")(1).toBoolean
           }
           else
             dispatch(msg.toChatMessage)
@@ -93,6 +85,25 @@ object Room {
       def sendAdminMessage(msg: String): Unit = dispatch(Protocol.ChatMessage("admin", msg))
       def dispatch(msg: Protocol.Message): Unit = subscribers.foreach(_._2 ! msg) // send msg to all actorref
       def members = subscribers.map(_._1).toSeq
+
+      def nextVideo(msg: ReceivedMessage): Unit = {
+        val nowPlaying = playlist.find(_._1)
+        val next = nowPlaying match {
+          case Some(x) =>
+            playlist -= x
+            if(playlist.isEmpty)
+              playlist += (false -> "xy_NKN75Jhw")
+            playlist.head
+          case None =>
+            if(playlist.isEmpty)
+              playlist += (false -> "xy_NKN75Jhw")
+            playlist.head
+        }
+        playlist = Set(true -> next._2) ++ playlist.filterNot(_ == next)
+        dispatch(msg.toLoadMessage(next._2))
+        dispatch(Protocol.PlaylistUpdate(playlist))
+      }
+
     }))
 
     def roomInSink(sender: String) = Sink.actorRef[ChatEvent](roomActor, ParticipantLeft(sender))
