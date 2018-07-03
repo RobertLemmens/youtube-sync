@@ -13,6 +13,8 @@ Theres a small offset allowed in synchronisation between clients and leader (2 s
 
 The server status ticks are every 5 second. This means every 5 seconds all users are checked for status and are candidate for potential updates.
 
+If autoplay is on or next is called and there is no more video in the playlist, elevator music will be played.
+
 Running version can be found at www.youtube-sync.nl
 ## Usage
 ### Developing
