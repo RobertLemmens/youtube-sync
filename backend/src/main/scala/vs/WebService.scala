@@ -12,17 +12,17 @@ import upickle.default._
 
 import scala.concurrent.duration._
 import scala.util.Failure
+
 class WebService(implicit system: ActorSystem) extends Directives{
 
-  var rooms = Set.empty[(String, Room)]
+  var rooms = Set.empty[(String, Room)] //list of all rooms
   import system.dispatcher
-  //  val theRoom = Room.create(system) // moet dynamic
-  //
-  //  system.scheduler.schedule(15.seconds, 15.seconds) {
-  //    theRoom.injectMessage(StatusRequest(sender = "server"))
-  //    theRoom.injectMessage(ChatMessage(sender = "server", s"Ping, the time is ${new Date().toString}"))
-  //  }
 
+  /**
+    * Routing, defines our uri schema and what they do.
+    *
+    * @return
+    */
   def route = {
     get {
       pathSingleSlash {
@@ -44,6 +44,12 @@ class WebService(implicit system: ActorSystem) extends Directives{
     }
   }
 
+  /**
+    * Create a new sync room.
+    *
+    * @param name room name
+    * @return
+    */
   def createRoom(name: String): (String, Room) = {
     val room = Room.create(system)
     rooms += (name -> room)
@@ -53,6 +59,13 @@ class WebService(implicit system: ActorSystem) extends Directives{
     rooms.find(_._1 == name).get // unsafe
   }
 
+  /**
+    * Handle messaging for sync rooms inside flow
+    *
+    * @param sender
+    * @param room
+    * @return
+    */
   def websocketRoomFlow(sender:String, room: (String, Room)): Flow[Message, Message, Any] = Flow[Message]
     .collect {
       case TextMessage.Strict(msg) => msg
@@ -63,6 +76,12 @@ class WebService(implicit system: ActorSystem) extends Directives{
     }
     .via(reportErrorsFlow)
 
+  /**
+    * Simply prints errors if something fails.
+    *
+    * @tparam T
+    * @return
+    */
   def reportErrorsFlow[T]: Flow[T, T, Any] =
     Flow[T]
       .watchTermination()((_, f) => f.onComplete {

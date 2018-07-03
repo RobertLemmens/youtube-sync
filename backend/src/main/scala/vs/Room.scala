@@ -15,12 +15,23 @@ trait Room {
 }
 
 object Room {
+  /**
+    * Basically a glorified apply method. We just called it create here to make sure we explicitly call this.
+    *
+    * @param system
+    * @return
+    */
   def create(system: ActorSystem): Room = {
     val roomActor = system.actorOf(Props(new Actor {
-      var subscribers = Set.empty[(Subscriber, ActorRef)]
-      var playlist = Set.empty[(Boolean, String)]
-      var autoplay = false
+      var subscribers = Set.empty[(Subscriber, ActorRef)] //list of connected users
+      var playlist = Set.empty[(Boolean, String)] //the video playlist
+      var autoplay = false //autoplay
 
+      /**
+        * Handle incoming messages. The gut of this application.
+        *
+        * @return
+        */
       override def receive: Receive = {
         case NewParticipant(name, subscriber) =>
           context.watch(subscriber)
@@ -82,10 +93,34 @@ object Room {
         case Terminated(sub) =>
           subscribers = subscribers.filterNot(_._2 == sub)
       }
+
+      /**
+        * Sends a message with user "admin" to all clients. If needed.
+        *
+        * @param msg
+        */
       def sendAdminMessage(msg: String): Unit = dispatch(Protocol.ChatMessage("admin", msg))
+
+      /**
+        * Sends message to all clients
+        *
+        * @param msg
+        */
       def dispatch(msg: Protocol.Message): Unit = subscribers.foreach(_._2 ! msg) // send msg to all actorref
+
+      /**
+        * Returns list of "Subscriber" case class. Holds the user information, without the corresponding actor.
+        *
+        * @return
+        */
       def members = subscribers.map(_._1).toSeq
 
+      /**
+        * Skip towards the next video if possible. If there is no next video to be played, elevator music will be added
+        * and played instead.
+        *
+        * @param msg
+        */
       def nextVideo(msg: ReceivedMessage): Unit = {
         val nowPlaying = playlist.find(_._1)
         val next = nowPlaying match {
@@ -108,6 +143,9 @@ object Room {
 
     def roomInSink(sender: String) = Sink.actorRef[ChatEvent](roomActor, ParticipantLeft(sender))
 
+    /**
+      * Create and return our room as Flow[_]
+      */
     new Room {
       def roomInFlow(sender: String): Flow[String, Protocol.ChatMessage, Any] = {
         val in = Flow[String]
@@ -120,10 +158,19 @@ object Room {
         Flow.fromSinkAndSource(in, out)
       }
 
+      /**
+        * Inject message into the room by calling this on the object itself.
+        *
+        * @param message
+        */
       override def injectMessage(message: Protocol.Message): Unit = roomActor ! message
     }
 
   }
+
+  /**
+    * Some basic ADT and transformer to our own Protocol types for chat messages / events
+    */
   private sealed trait ChatEvent
   private case class NewParticipant(name: String, subscriber: ActorRef) extends ChatEvent
   private case class ParticipantLeft(name: String) extends ChatEvent

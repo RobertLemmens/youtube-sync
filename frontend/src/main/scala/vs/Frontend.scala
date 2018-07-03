@@ -10,47 +10,64 @@ import upickle.default._
 
 object Frontend {
 
+  /**
+    * Initialize our buttons class scope as we might need them everywhere.
+    */
   val addButton = dom.document.getElementById("addButton").asInstanceOf[HTMLButtonElement]
   val playButton = dom.document.getElementById("playButton").asInstanceOf[HTMLButtonElement]
   val pauseButton = dom.document.getElementById("pauseButton").asInstanceOf[HTMLButtonElement]
   val nextButton = dom.document.getElementById("nextButton").asInstanceOf[HTMLButtonElement]
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
-
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
-
   val connectButton = dom.document.getElementById("connectButton").asInstanceOf[HTMLButtonElement]
 
 
-  var following = ""
-  // true = now playing, or next to play when Play is called
-  var playlist = Set.empty[(Boolean, String)]
+  var following = "" // The room leader
+  var playlist = Set.empty[(Boolean, String)] // true = now playing, or next to play when Play is called
 
+  /**
+    * Entrypoint
+    *
+    * @param args
+    */
   def main(args: Array[String]): Unit = {
     addPlayer(document.body)
     hideMain()
   }
 
+  /**
+    * Hide the login interface (joining a room). When you join a room this gets called and the main interface is shown.
+    *
+    */
   def hideLogin(): Unit = {
     document.getElementById("login").setAttribute("style", "display: none;")
   }
 
+  /**
+    * Hide the main interface.
+    *
+    */
   def hideMain(): Unit = {
     document.getElementById("mainNav").setAttribute("style", "display: none;")
     document.getElementById("mainRow1").setAttribute("style", "display: none;")
   }
 
+  /**
+    * Show the main interface. Gets called after a room is joined.
+    *
+    */
   def showMain(): Unit = {
     document.getElementById("mainNav").removeAttribute("style")
     document.getElementById("mainRow1").removeAttribute("style")
   }
 
-  def addClickedMessage(player: Player): Unit = {
-    val inputText = document.getElementById("videoUrl").asInstanceOf[html.Input].value.toString
-    appendLog("you added " + inputText)
-  }
 
-
+  /**
+    * Creates a youtube player. Basically the frontend entry point. (this gets called in main).
+    *
+    * @param targetNode
+    */
   def addPlayer(targetNode: dom.Node): Unit = {
     var tag = org.scalajs.dom.document.createElement("script").asInstanceOf[org.scalajs.dom.html.Script]
     tag.src = "https://www.youtube.com/iframe_api"
@@ -63,6 +80,11 @@ object Frontend {
     }
   }
 
+  /**
+    * Frontend setup.
+    *
+    * @param player
+    */
   def setupUI(player: Player): Unit = {
     connectButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val userNameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
@@ -73,6 +95,13 @@ object Frontend {
     }
   }
 
+  /**
+    * The bread and butter of the frontend. Connection and message handling is all done in here.
+    *
+    * @param name the username
+    * @param room the name of the room
+    * @param player youtube player reference
+    */
   def joinChat(name: String, room: String, player: Player): Unit = {
     appendLog(s"Trying to join as '$name'...")
     val chat = new WebSocket(getWebsocketUri(dom.document, name, room))
@@ -197,6 +226,11 @@ object Frontend {
     }
   }
 
+  /**
+    * Initialize the youtube player.
+    *
+    * @return
+    */
   def createPlayer(): Player = {
     val player = new Player("player", PlayerOptions(
       width = "100%",
@@ -214,6 +248,16 @@ object Frontend {
     player
   }
 
+  /**
+    * This checks if the player is in some form out of sync with the "leader" of the room. If this returns true,
+    * updatePlayer gets called.
+    *
+    * @param player
+    * @param status
+    * @param time
+    * @param url
+    * @return
+    */
   def checkForUpdate(player: Player, status: Int, time: Double, url: String): Boolean = {
     val urlEen = player.getVideoUrl().split("v=")(1)
     val urlTwee = url.split("v=")(1)
@@ -234,6 +278,15 @@ object Frontend {
     }
   }
 
+  /**
+    * This gets called when the player is deemed out of sync with the "leader" of the room. It checks whats wrong and updates the
+    * respecting fields.
+    *
+    * @param player
+    * @param status
+    * @param time
+    * @param url
+    */
   def updatePlayer(player: Player, status: Int, time: Double, url: String): Unit = {
     appendLog("Trying to update..")
     val urlEen = player.getVideoUrl().split("v=")(1)
@@ -255,6 +308,12 @@ object Frontend {
     }
   }
 
+  /**
+    * Gets called when the youtube player is ready. Usually when its done initializing. We use this to start setting up
+    * the interface when its ready for it.
+    *
+    * @param event
+    */
   def onPlayerReady(event: YTEvent): Unit = {
     val p = event.target.asInstanceOf[Player]
     setupUI(p)
@@ -263,27 +322,41 @@ object Frontend {
 
   }
 
+  /**
+    * Gets called by the youtube player when an error occurs.
+    *
+    * @param event
+    */
   def onPlayerError(event: YTEvent): Unit = {
     val p = event.target.asInstanceOf[Player]
+    appendLog("An error occured during playback")
     p.clearVideo()
   }
 
+  /**
+    * Gets called by the youtube player when playback state changes.
+    *
+    * @param event
+    */
   def onPlayerStateChange(event: YTEvent): Unit = {
 
   }
 
-//  def appendPar(targetNode: dom.Node, text: String): Unit = {
-//    val parNode = document.createElement("p")
-//    val textNode = document.createTextNode(text)
-//    parNode.appendChild(textNode)
-//    targetNode.appendChild(parNode)
-//  }
-
+  /**
+    * Appends messages to the log area(chat field).
+    *
+    * @param text
+    */
   def appendLog(text: String): Unit = {
     val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
     logNode.value += "\n"+text
   }
 
+  /**
+    * Updates the userlist component.
+    *
+    * @param members
+    */
   def updateUserList(members: Set[(Boolean, String)]): Unit = {
     val userList = dom.document.getElementById("userList").asInstanceOf[HTMLUListElement]
     userList.innerHTML = ""
@@ -301,6 +374,11 @@ object Frontend {
     }
   }
 
+  /**
+    * Updates the playlist component.
+    *
+    * @param newList
+    */
   def updatePlayList(newList: Set[(Boolean, String)]): Unit = {
     playlist = newList
     val playlistList = dom.document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
@@ -321,6 +399,15 @@ object Frontend {
     }
   }
 
+  /**
+    * Gets us the correct URL for the websocket connection. This implies that you're hosting the frontend on the same
+    * URL as the backend is running on.
+    *
+    * @param document
+    * @param name
+    * @param room
+    * @return
+    */
   def getWebsocketUri(document: Document, name: String, room: String): String = {
     val wsProtocol = if (dom.document.location.protocol == "https:") "wss" else "ws"
 

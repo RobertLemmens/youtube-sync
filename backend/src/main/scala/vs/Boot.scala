@@ -6,6 +6,10 @@ import akka.stream.ActorMaterializer
 
 import scala.util.{Failure, Success}
 
+/**
+  * Application entry point
+  *
+  */
 object Boot extends App {
   implicit val system = ActorSystem()
   import system.dispatcher
