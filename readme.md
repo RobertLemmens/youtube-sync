@@ -1,3 +1,4 @@
+![gui1](https://raw.githubusercontent.com/RobertLemmens/youtube-sync/master/backend/src/main/resources/youtube-sync.PNG)
 # :clock130: Sync youtube playback between browsers :clock10:
 This is an application that syncs youtube playback between connected users using websockets. The entire thing is build with scala. Akka on the backend and ScalaJS on the frontend side. 
 
