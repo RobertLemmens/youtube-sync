@@ -21,8 +21,11 @@ object Frontend {
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val connectButton = dom.document.getElementById("connectButton").asInstanceOf[HTMLButtonElement]
+  val colorButton = dom.document.getElementById("invertColor").asInstanceOf[HTMLButtonElement]
+  val controlPanelSize = dom.document.getElementById("controlPanelSizeButton").asInstanceOf[HTMLButtonElement]
 
-
+  var isSmall = false // controlpanel size
+  var isDark = false // theme boolean
   var following = "" // The room leader
   var playlist = Set.empty[(Boolean, String)] // true = now playing, or next to play when Play is called
 
@@ -32,7 +35,9 @@ object Frontend {
     * @param args
     */
   def main(args: Array[String]): Unit = {
+    println("starting")
     addPlayer(document.body)
+    println("hiding main 1")
     hideMain()
   }
 
@@ -49,8 +54,7 @@ object Frontend {
     *
     */
   def hideMain(): Unit = {
-    document.getElementById("mainNav").setAttribute("style", "display: none;")
-    document.getElementById("mainRow1").setAttribute("style", "display: none;")
+    document.getElementById("mainRow").setAttribute("style", "display: none;")
   }
 
   /**
@@ -58,8 +62,7 @@ object Frontend {
     *
     */
   def showMain(): Unit = {
-    document.getElementById("mainNav").removeAttribute("style")
-    document.getElementById("mainRow1").removeAttribute("style")
+    document.getElementById("mainRow").removeAttribute("style")
   }
 
 
@@ -90,8 +93,48 @@ object Frontend {
       val userNameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
       val serverNameField = dom.document.getElementById("room").asInstanceOf[HTMLInputElement]
       joinChat(userNameField.value, serverNameField.value, player)
+      document.getElementById("body").setAttribute("class", "white")
       hideLogin()
       showMain()
+    }
+    controlPanelSize.onclick = { (event: org.scalajs.dom.raw.Event) =>
+      val icon = dom.document.getElementById("controlPanelSizeIcon")
+      icon.innerHTML = ""
+      if(isSmall) {
+        icon.appendChild(document.createTextNode("keyboard_arrow_right"))
+        val playerContainer = document.getElementById("playerContainer")
+        val controlPanelContainer = document.getElementById("controlPanelContainer")
+        val nonPlaybackItems = document.getElementById("nonPlaybackItems")
+        val title = document.getElementById("titleText")
+        title.innerHTML = ""
+        title.appendChild(document.createTextNode("Youtube-Sync"))
+        pauseButton.removeAttribute("style")
+        playButton.removeAttribute("style")
+        nextButton.removeAttribute("style")
+        enableAutoPlayButton.removeAttribute("style")
+        disableAutoPlayButton.removeAttribute("style")
+        nonPlaybackItems.removeAttribute("style")
+        playerContainer.setAttribute("class", "col s9")
+        controlPanelContainer.setAttribute("class", "col s3")
+        isSmall = false
+      } else {
+        icon.appendChild(document.createTextNode("keyboard_arrow_left"))
+        val playerContainer = document.getElementById("playerContainer")
+        val controlPanelContainer = document.getElementById("controlPanelContainer")
+        val nonPlaybackItems = document.getElementById("nonPlaybackItems")
+        val title = document.getElementById("titleText")
+        title.innerHTML = ""
+        title.appendChild(document.createTextNode("YS"))
+        pauseButton.setAttribute("style", "width:100%; margin-top:5px;")
+        playButton.setAttribute("style", "width:100%; margin-top:5px;")
+        nextButton.setAttribute("style", "width:100%; margin-top:5px; ")
+        enableAutoPlayButton.setAttribute("style", "width:100%; margin-top:5px;")
+        disableAutoPlayButton.setAttribute("style", "width:100%; margin-top:5px;")
+        nonPlaybackItems.setAttribute("style", "display: none;")
+        playerContainer.setAttribute("class", "col s11")
+        controlPanelContainer.setAttribute("class", "col s1")
+        isSmall = true
+      }
     }
   }
 
@@ -110,7 +153,7 @@ object Frontend {
       sendMessageButton.disabled = false
       val roomLabelP = document.getElementById("roomLabel").asInstanceOf[HTMLParagraphElement]
       roomLabelP.innerHTML = ""
-      roomLabelP.appendChild(document.createTextNode(s"Room: $room"))
+      roomLabelP.appendChild(document.createTextNode(s"$room"))
 
 
       val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
@@ -138,9 +181,10 @@ object Frontend {
       }
       addButton.onclick = { event: org.scalajs.dom.raw.Event =>
         val urlField = dom.document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
-        val videoId = urlField.value.split("v=")(1)
+        val videoId = urlField.value.split("v=")(1).split("&")(0)
         appendLog("sending server: " + videoId)
         chat.send("/add false " + videoId)
+        urlField.value = ""
       }
       enableAutoPlayButton.onclick = {
         event: org.scalajs.dom.raw.Event =>
@@ -153,6 +197,37 @@ object Frontend {
           chat.send("/settings false")
           disableAutoPlayButton.setAttribute("disabled", "true")
           enableAutoPlayButton.removeAttribute("disabled")
+      }
+      colorButton.onclick = {
+        event: org.scalajs.dom.raw.Event =>
+          val mainCard = document.getElementById("controlPanel")
+          val playlistLabel =  document.getElementById("playlistLabel")
+          val usersLabel = document.getElementById("usersLabel")
+          val urlField = document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
+          val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
+          val playList = document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
+          val userList = document.getElementById("userList").asInstanceOf[HTMLUListElement]
+          val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
+
+
+          if(!isDark) {
+            mainCard.setAttribute("class", "card grey darken-4")
+            usersLabel.setAttribute("class", "flow-text white-text")
+            playlistLabel.setAttribute("class", "flow-text white-text")
+            urlField.setAttribute("class", "white-text")
+            chatField.setAttribute("class", "white-text")
+            logNode.setAttribute("class", "white-text")
+            isDark = true
+          } else {
+            mainCard.setAttribute("class", "card")
+            usersLabel.setAttribute("class", "flow-text")
+            playlistLabel.setAttribute("class", "flow-text")
+            urlField.removeAttribute("class")
+            chatField.removeAttribute("class")
+            logNode.removeAttribute("class")
+
+            isDark = false
+          }
       }
 
       chat.send("/playlist")
@@ -350,6 +425,7 @@ object Frontend {
   def appendLog(text: String): Unit = {
     val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
     logNode.value += "\n"+text
+    logNode.scrollTop = logNode.scrollHeight
   }
 
   /**

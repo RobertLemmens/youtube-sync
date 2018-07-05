@@ -26,6 +26,7 @@ object Room {
       var subscribers = Set.empty[(Subscriber, ActorRef)] //list of connected users
       var playlist = Set.empty[(Boolean, String)] //the video playlist
       var autoplay = false //autoplay
+      var leaderMode = false // only leader can control playback
 
       /**
         * Handle incoming messages. The gut of this application.
@@ -33,65 +34,14 @@ object Room {
         * @return
         */
       override def receive: Receive = {
-        case NewParticipant(name, subscriber) =>
-          context.watch(subscriber)
-          if(subscribers.isEmpty) {
-            subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = true) -> subscriber)
-            dispatch(Protocol.Joined(name, subscribers.map(c => c._1.isLeader -> c._1.name)))
-          }
-          else{
-            subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = false) -> subscriber)
-            dispatch(Protocol.Joined(name, subscribers.map(c => c._1.isLeader -> c._1.name)))
-          }
-        case msg: ReceivedMessage =>
-          println("Received: " + msg.message)
-          if(msg.message.equals("/play"))
-            dispatch(msg.toPlayMessage)
-          else if(msg.message.equals("/pause"))
-            dispatch(msg.toPauseMessage)
-          else if(msg.message.contains("/status")) {
-            val splittedMsg = msg.message.split(" ")
-            subscribers.find(_._1.name == msg.sender).get._1.status = PlayerStatus(splittedMsg(1).toInt, splittedMsg(2).toDouble, splittedMsg(3))
-            if(autoplay && subscribers.find(_._1.name == msg.sender).get._1.isLeader && splittedMsg(1).toInt == 0) { // autoplay the next video
-              nextVideo(msg)
-            }
-            dispatch(msg.toStatusMessage(subscribers.find(_._1.name == msg.sender).get._1.status))
-          }
-          else if(msg.message.contains("/add")) {
-            val playing = msg.message.split(" ")(1).toBoolean
-            val videoId = msg.message.split(" ")(2)
-            playlist += (playing -> videoId)
-            dispatch(msg.toAddMessage)
-          }
-          else if(msg.message.equals("/next")){
-            nextVideo(msg)
-          }
-          else if(msg.message.equals("/playlist")) {
-            dispatch(Protocol.PlaylistUpdate(playlist))
-          }
-          else if(msg.message.equals("/members")) {
-            dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
-          }
-          else if(msg.message.contains("/settings")) {
-            autoplay = msg.message.split(" ")(1).toBoolean
-          }
-          else
-            dispatch(msg.toChatMessage)
+        case NewParticipant(name, subscriber) => handlePersonJoined(name, subscriber)
+        case msg: ReceivedMessage => handleReceivedMessage(msg)
         case msg: Protocol.StatusRequest => dispatch(msg)
         case msg: Protocol.ChatMessage => dispatch(msg)
         case msg: Protocol.PlayVideo => dispatch(msg)
         case msg: Protocol.PauseVideo => dispatch(msg)
-
-        case ParticipantLeft(person) =>
-          val entry @ (name, ref) = subscribers.find(_._1.name == person).get
-          ref ! Status.Success(Unit)
-          subscribers -= entry
-          if(name.isLeader && subscribers.nonEmpty)
-            subscribers.head._1.isLeader = true // if the leader left, set the next in the list as leader
-
-          dispatch(Protocol.Left(person, subscribers.map(c => c._1.isLeader -> c._1.name)))
-        case Terminated(sub) =>
-          subscribers = subscribers.filterNot(_._2 == sub)
+        case ParticipantLeft(person) => handlePersonleft(person)
+        case Terminated(sub) => subscribers = subscribers.filterNot(_._2 == sub)
       }
 
       /**
@@ -137,6 +87,76 @@ object Room {
         playlist = Set(true -> next._2) ++ playlist.filterNot(_ == next)
         dispatch(msg.toLoadMessage(next._2))
         dispatch(Protocol.PlaylistUpdate(playlist))
+      }
+
+      def addVideo(msg: ReceivedMessage): Unit = {
+        val playing = msg.message.split(" ")(1).toBoolean
+        val videoId = msg.message.split(" ")(2)
+        playlist += (playing -> videoId)
+        dispatch(msg.toAddMessage)
+      }
+
+      def statusTick(msg: ReceivedMessage): Unit = {
+        val splittedMsg = msg.message.split(" ")
+        subscribers.find(_._1.name == msg.sender).get._1.status = PlayerStatus(splittedMsg(1).toInt, splittedMsg(2).toDouble, splittedMsg(3))
+        if(autoplay && subscribers.find(_._1.name == msg.sender).get._1.isLeader && splittedMsg(1).toInt == 0) { // autoplay the next video
+          nextVideo(msg)
+        }
+        dispatch(msg.toStatusMessage(subscribers.find(_._1.name == msg.sender).get._1.status))
+      }
+
+      /**
+        *   Handle a chat message. First check if it starts with a command, if not, dispatch as normal chat message.
+        */
+      def handleReceivedMessage(msg: ReceivedMessage): Unit = {
+        println("Received: " + msg.message)
+        if(msg.message.equals("/play"))
+          dispatch(msg.toPlayMessage)
+        else if(msg.message.equals("/pause"))
+          dispatch(msg.toPauseMessage)
+        else if(msg.message.contains("/status"))
+          statusTick(msg)
+        else if(msg.message.contains("/add"))
+          addVideo(msg)
+        else if(msg.message.equals("/next"))
+          nextVideo(msg)
+        else if(msg.message.equals("/playlist"))
+          dispatch(Protocol.PlaylistUpdate(playlist))
+        else if(msg.message.equals("/members"))
+          dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
+        else if(msg.message.contains("/settings"))
+          autoplay = msg.message.split(" ")(1).toBoolean
+        else
+          dispatch(msg.toChatMessage)
+      }
+
+      /**
+        * Handle joining person. Add to subscriber list and dispatch message
+        * @param name
+        * @param subscriber
+        */
+      def handlePersonJoined(name: String, subscriber: ActorRef): Unit = {
+        context.watch(subscriber)
+        if(subscribers.isEmpty)
+          subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = true) -> subscriber)
+        else
+          subscribers += (Subscriber(name, PlayerStatus(0,0, ""), isLeader = false) -> subscriber)
+
+        dispatch(Protocol.Joined(name, subscribers.map(c => c._1.isLeader -> c._1.name)))
+      }
+
+      /**
+        * Handle leaving person. Remove from subscriber list and dispatch message
+        * @param person
+        */
+      def handlePersonleft(person: String): Unit = {
+        val entry @ (name, ref) = subscribers.find(_._1.name == person).get
+        ref ! Status.Success(Unit)
+        subscribers -= entry
+        if(name.isLeader && subscribers.nonEmpty)
+          subscribers.head._1.isLeader = true // if the leader left, set the next in the list as leader
+        println("userlist: " + subscribers.map(c => c._1.isLeader -> c._1.name))
+        dispatch(Protocol.Left(person, subscribers.map(c => c._1.isLeader -> c._1.name)))
       }
 
     }))

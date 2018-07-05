@@ -10,24 +10,19 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/css/materialize.min.css">
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0-beta/js/materialize.min.js"></script>
-
 </head>
-<body>
+
+<body class="blue-grey lighten-5" id="body">
 <!-- custom css for this form -->
 <style>
     .login {
         margin-top: 200px;
     }
-    .login .card {
-        background: rgba(0,0,0,.6);
-    }
     .login label {
         font-size: 16px;
-        color:#ccc;
     }
     .login input{
         font-size: 20px;
-        color:#ccc;
     }
     @font-face {
         font-family: "Beach";
@@ -36,22 +31,34 @@
     .brand-logo {
         font-family: "Beach", Arial, Verdana, Tahoma;
     }
-
-
+    .row {
+        margin-bottom: 0;
+    }
+    .row .col {
+        padding:0;
+    }
+    .card {
+        margin: 0;
+    }
+    .collection{
+        border: none;
+    }
 </style>
+
 <div class="row login" id="login">
     <div class="col s6 offset-s3">
         <div class="card">
             <div class="card-action red white-text">
-                <h3>Join or Create a room</h3>
+                <h1 class="brand-logo center-align">Youtube-Sync</h1>
+                <h5 class="center-align">Join or Create a room</h5>
             </div>
             <div class="card-content">
                 <div class="form-field">
-                    <label for="room">Room</label>
+                    <label for="room">Room name</label>
                     <input id="room" type="text">
                 </div>
                 <div class="form-field">
-                    <label for="name">Name</label>
+                    <label for="name">Display name</label>
                     <input id="name" type="text">
                 </div>
                 <div class="form-field">
@@ -62,67 +69,63 @@
     </div>
 </div>
 
-<div class="row" id="mainRow1">
-    <div class="col s10">
-        <div id="container" style="position: relative; width: 100%; height: 0; padding-bottom: 56%">
+<div class="row" id="mainRow">
+    <div id="playerContainer" class="col s9">
+        <div id="container" style="position: relative; width: 100%; height: 100vh; padding-bottom: 56%">
             <div id="player" style="position: absolute;"></div>
         </div>
     </div>
-    <div class="col s2">
-        <p class="flow-text" id="roomLabel">Room: </p>
-        <input id="videoUrlField" type="text">
-        <button id="addButton" class="btn waves-effect waves-light red" type="button">
-            Add video
-        </button>
-        <p class="flow-text">Playlist: </p>
-        <ul id="playlistList" class="collection">
-            <li class="collection-item">Empty</li>
-        </ul>
-        <p class="flow-text" id="followP"></p>
-        <p class="flow-text">Users:</p>
-        <ul id="userList" class="collection">
-            <li class="collection-item">Empty</li>
-        </ul>
-        <textarea id="logArea" style="height: 150px;"></textarea>
-        <input id="chatField" type="text">
-        <button id="sendMessageButton" class="btn waves-effect waves-light red" type="button">Send</button>
+    <div id="controlPanelContainer" class="col s3">
+        <div id="controlPanel" class="card" style="height: 100vh">
+            <div class="card-action red white-text">
+                <h3 id="titleText" class="brand-logo center-align">Youtube-Sync</h3>
+                <h5 class="center-align" id="roomLabel">Room </h5>
+                <a id="invertColor" class="btn-floating halfway-fab waves-effect waves-light grey darken-4" type="button">
+                    <i class="material-icons">invert_colors</i>
+                </a>
+            </div>
+            <div class="card-content">
+
+                <a id="playButton" class="btn waves-effect white black-text" type="button">
+                    <i class="material-icons">play_arrow</i>
+                </a>
+                <a id="pauseButton" class="btn waves-effect white black-text" type="button">
+                    <i class="material-icons">pause</i>
+                </a>
+                <a id="nextButton" class="btn waves-effect white black-text" type="button">
+                    <i class="material-icons">skip_next</i>
+                </a>
+                <a id="enableAutoplayButton" class="btn waves-effect white black-text" type="button">
+                    <i class="material-icons">autorenew</i>
+                </a>
+                <a disabled id="disableAutoplayButton" class="btn waves-effect white black-text" type="button">
+                    <i class="material-icons">autorenew</i><i class="material-icons">clear</i>
+                </a>
+
+                <div id="nonPlaybackItems">
+                    <input id="videoUrlField" type="text">
+                    <button id="addButton" class="btn waves-effect waves-light red" type="button">
+                        Add video
+                    </button>
+                    <p id="playlistLabel" class="flow-text">Playlist: </p>
+                    <ul id="playlistList" class="collection">
+                        <li class="collection-item">Empty</li>
+                    </ul>
+                    <p class="flow-text" id="followP"></p>
+                    <p id="usersLabel" class="flow-text">Users:</p>
+                    <ul id="userList" class="collection">
+                        <li class="collection-item">Empty</li>
+                    </ul>
+                    <textarea id="logArea" style="height: 150px;"></textarea>
+                    <input id="chatField" type="text">
+                    <button id="sendMessageButton" class="btn waves-effect waves-light red" type="button">Send</button>
+                </div>
+
+            </div>
+            <a id="controlPanelSizeButton" class="btn-small red"><i id="controlPanelSizeIcon" class="material-icons">keyboard_arrow_right</i></a>
+        </div>
     </div>
 </div>
-
-<nav id="mainNav">
-    <div class="nav-wrapper  red">
-        <a href="#" style="font-size: 2.7rem;" class="brand-logo right">Youtube-Sync</a>
-        <ul id="nav-mobile" class="left hide-on-med-and-down">
-            <li>
-                <a style="margin-left: 5px;" id="playButton" class="btn waves-effect white black-text" type="button">
-                    <i class="material-icons right">play_arrow</i>Play
-                </a>
-            </li>
-            <li>
-                <a style="margin-left: 5px;" id="pauseButton" class="btn waves-effect white black-text" type="button">
-                    <i class="material-icons right">pause</i>Pause
-                </a>
-            </li>
-            <li>
-                <a style="margin-left: 5px;" id="nextButton" class="btn waves-effect white black-text" type="button">
-                    <i class="material-icons right">skip_next</i> Next
-                </a>
-            </li>
-            <li>
-                <a style="margin-left: 10px;" id="enableAutoplayButton" class="btn-small waves-effect white black-text" type="button">
-                    <i class="material-icons right">autorenew</i>Enable autoplay
-                </a>
-            </li>
-            <li>
-                <a style="margin-left: 10px;" disabled id="disableAutoplayButton" class="btn-small waves-effect white black-text" type="button">
-                    disable autoplay
-                </a>
-            </li>
-        </ul>
-    </div>
-</nav>
-
-
 
 <script type="text/javascript" src="frontend-fastopt.js"></script>
 
