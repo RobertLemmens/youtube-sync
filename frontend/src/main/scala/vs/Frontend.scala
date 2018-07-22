@@ -37,7 +37,6 @@ object Frontend {
   def main(args: Array[String]): Unit = {
     println("starting")
     addPlayer(document.body)
-    println("hiding main 1")
     hideMain()
   }
 
@@ -292,6 +291,16 @@ object Frontend {
             enableAutoPlayButton.removeAttribute("disabled")
           }
         }
+        case Protocol.WorldRequest(sender) => {
+          chat.send("/world") // vraag world aan zodra de server dit vraagt te doen.
+        }
+          // a world message is the total current state whereby the player state is taken from the
+          // room leader
+        case Protocol.World(status, time, videoUrl, autoplay, allMembers, playlistt) => {
+          updateUserList(allMembers)
+          updatePlayList(playlistt)
+          setAutoPlay(autoplay)
+        }
 
       }
     }
@@ -381,6 +390,22 @@ object Frontend {
     } else if(player.getCurrentTime() != time) {
       player.seekTo(time, true)
     }
+  }
+
+  /**
+    * Sets autoplay and updates the UI accordingly
+    *
+    * @param autoplay
+    */
+  def setAutoPlay(autoplay: Boolean): Unit = {
+    if(autoplay) {
+      enableAutoPlayButton.setAttribute("disabled", "true")
+      disableAutoPlayButton.removeAttribute("disabled")
+    } else if(!autoplay) {
+      disableAutoPlayButton.setAttribute("disabled", "true")
+      enableAutoPlayButton.removeAttribute("disabled")
+    }
+
   }
 
   /**

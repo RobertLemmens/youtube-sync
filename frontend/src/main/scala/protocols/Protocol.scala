@@ -8,7 +8,7 @@ object Protocol {
     macroRW[PlayVideo], macroRW[PauseVideo], macroRW[AddVideo],
     macroRW[StatusRequest], macroRW[StatusMessage], macroRW[StatusUpdate],
     macroRW[LoadVideo], macroRW[PlaylistUpdate], macroRW[MemberStatus],
-    macroRW[SettingsUpdate]
+    macroRW[SettingsUpdate], macroRW[World], macroRW[WorldRequest]
   )
 
   case class ChatMessage(sender: String, message: String) extends Message
@@ -19,9 +19,11 @@ object Protocol {
   case class AddVideo(sender: String, videoUrl: String) extends Message
   case class LoadVideo(sender: String, videoId: String) extends Message
   case class StatusRequest(sender: String) extends Message
+  case class WorldRequest(sender: String) extends Message
   case class StatusMessage(sender: String, status: Int, time: Double, videoUrl: String) extends Message
   case class StatusUpdate(status: Int, time: Double, videoUrl: String) extends Message
   case class PlaylistUpdate(playlist: Set[(Boolean, String)]) extends Message
   case class MemberStatus(members: Set[(Boolean, String)]) extends Message
   case class SettingsUpdate(autoplay: Boolean) extends Message
+  case class World(status: Int, time: Double, videoUrl: String, autoplay: Boolean, allMembers: Set[(Boolean, String)], playlist: Set[(Boolean, String)]) extends Message
 }

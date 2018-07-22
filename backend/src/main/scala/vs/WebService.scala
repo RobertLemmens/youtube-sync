@@ -7,7 +7,7 @@ import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives
 import akka.stream.scaladsl.Flow
 import protocols.Protocol
-import protocols.Protocol.{ChatMessage, StatusRequest}
+import protocols.Protocol.{ChatMessage, StatusRequest, World, WorldRequest}
 import upickle.default._
 
 import scala.concurrent.duration._
@@ -55,6 +55,9 @@ class WebService(implicit system: ActorSystem) extends Directives{
     rooms += (name -> room)
     system.scheduler.schedule(5.seconds, 5.seconds) {
       room.injectMessage(StatusRequest(sender = "server"))
+    }
+    system.scheduler.schedule(1.minute, 1.minute) {
+      room.injectMessage(WorldRequest(sender = "server"))
     }
     rooms.find(_._1 == name).get // unsafe
   }

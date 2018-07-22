@@ -4,6 +4,9 @@ import akka.actor._
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 import protocols.Protocol
+import protocols.Protocol.World
+
+import scala.concurrent.duration._
 
 case class Subscriber(name: String, var status: PlayerStatus, var isLeader: Boolean)
 case class PlayerStatus(playerStatus: Int, currentTime: Double, videoUrl: String)
@@ -23,10 +26,14 @@ object Room {
     */
   def create(system: ActorSystem): Room = {
     val roomActor = system.actorOf(Props(new Actor {
+
+      // The var corner e.g. danger zone
       var subscribers = Set.empty[(Subscriber, ActorRef)] //list of connected users
       var playlist = Set.empty[(Boolean, String)] //the video playlist
       var autoplay = false //autoplay
       var leaderMode = false // only leader can control playback
+      var leaderStatus: PlayerStatus = PlayerStatus(0,0,"") //keep track of leader status
+      // End of the var corner
 
       /**
         * Handle incoming messages. The gut of this application.
@@ -40,6 +47,7 @@ object Room {
         case msg: Protocol.ChatMessage => dispatch(msg)
         case msg: Protocol.PlayVideo => dispatch(msg)
         case msg: Protocol.PauseVideo => dispatch(msg)
+        case msg: Protocol.World => dispatch(msg)
         case ParticipantLeft(person) => handlePersonleft(person)
         case Terminated(sub) => subscribers = subscribers.filterNot(_._2 == sub)
       }
@@ -96,8 +104,15 @@ object Room {
         dispatch(msg.toAddMessage)
       }
 
+      def updateLeaderStatus(state: Int, time: Double, url: String): Unit = {
+        leaderStatus = PlayerStatus(state, time, url)
+      }
+
       def statusTick(msg: ReceivedMessage): Unit = {
         val splittedMsg = msg.message.split(" ")
+        if(subscribers.find(_._1.name == msg.sender).get._1.isLeader) {
+          updateLeaderStatus(splittedMsg(1).toInt, splittedMsg(2).toDouble, splittedMsg(3))
+        }
         subscribers.find(_._1.name == msg.sender).get._1.status = PlayerStatus(splittedMsg(1).toInt, splittedMsg(2).toDouble, splittedMsg(3))
         if(autoplay && subscribers.find(_._1.name == msg.sender).get._1.isLeader && splittedMsg(1).toInt == 0) { // autoplay the next video
           nextVideo(msg)
@@ -126,6 +141,9 @@ object Room {
           dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
         else if(msg.message.contains("/settings"))
           autoplay = msg.message.split(" ")(1).toBoolean
+        else if(msg.message.equals("/world")) {
+          dispatch(Protocol.World(leaderStatus.playerStatus,leaderStatus.currentTime,leaderStatus.videoUrl, autoplay, subscribers.map(c => c._1.isLeader -> c._1.name), playlist))
+        }
         else
           dispatch(msg.toChatMessage)
       }
@@ -184,6 +202,7 @@ object Room {
         * @param message
         */
       override def injectMessage(message: Protocol.Message): Unit = roomActor ! message
+
     }
 
   }
