@@ -4,9 +4,8 @@ import akka.actor._
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 import protocols.Protocol
-import protocols.Protocol.World
 
-import scala.concurrent.duration._
+import scala.collection.mutable.{ListBuffer, Stack}
 
 case class Subscriber(name: String, var status: PlayerStatus, var isLeader: Boolean)
 case class PlayerStatus(playerStatus: Int, currentTime: Double, videoUrl: String)
@@ -29,7 +28,7 @@ object Room {
 
       // The var corner e.g. danger zone
       var subscribers = Set.empty[(Subscriber, ActorRef)] //list of connected users
-      var playlist = Set.empty[(Boolean, String)] //the video playlist
+      var playlist = new ListBuffer[(Boolean, String)]() // the video playlist, listbuffer for mutability
       var autoplay = false //autoplay
       var leaderMode = false // only leader can control playback
       var leaderStatus: PlayerStatus = PlayerStatus(0,0,"") //keep track of leader status
@@ -47,6 +46,7 @@ object Room {
         case msg: Protocol.ChatMessage => dispatch(msg)
         case msg: Protocol.PlayVideo => dispatch(msg)
         case msg: Protocol.PauseVideo => dispatch(msg)
+        case msg: Protocol.WorldRequest => dispatch(msg)
         case msg: Protocol.World => dispatch(msg)
         case ParticipantLeft(person) => handlePersonleft(person)
         case Terminated(sub) => subscribers = subscribers.filterNot(_._2 == sub)
@@ -92,9 +92,10 @@ object Room {
               playlist += (false -> "xy_NKN75Jhw")
             playlist.head
         }
-        playlist = Set(true -> next._2) ++ playlist.filterNot(_ == next)
+
+        playlist.update(playlist.indexOf(next), next.copy(_1 = true, _2 = next._2)) // set next op true
         dispatch(msg.toLoadMessage(next._2))
-        dispatch(Protocol.PlaylistUpdate(playlist))
+        dispatch(Protocol.PlaylistUpdate(playlist.toList))
       }
 
       def addVideo(msg: ReceivedMessage): Unit = {
@@ -136,13 +137,13 @@ object Room {
         else if(msg.message.equals("/next"))
           nextVideo(msg)
         else if(msg.message.equals("/playlist"))
-          dispatch(Protocol.PlaylistUpdate(playlist))
+          dispatch(Protocol.PlaylistUpdate(playlist.toList))
         else if(msg.message.equals("/members"))
           dispatch(Protocol.MemberStatus(subscribers.map(c => c._1.isLeader -> c._1.name)))
         else if(msg.message.contains("/settings"))
           autoplay = msg.message.split(" ")(1).toBoolean
         else if(msg.message.equals("/world")) {
-          dispatch(Protocol.World(leaderStatus.playerStatus,leaderStatus.currentTime,leaderStatus.videoUrl, autoplay, subscribers.map(c => c._1.isLeader -> c._1.name), playlist))
+          dispatch(Protocol.World(leaderStatus.playerStatus,leaderStatus.currentTime,leaderStatus.videoUrl, autoplay, subscribers.map(c => c._1.isLeader -> c._1.name), playlist.toList))
         }
         else
           dispatch(msg.toChatMessage)

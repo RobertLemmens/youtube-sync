@@ -56,7 +56,7 @@ class WebService(implicit system: ActorSystem) extends Directives{
     system.scheduler.schedule(5.seconds, 5.seconds) {
       room.injectMessage(StatusRequest(sender = "server"))
     }
-    system.scheduler.schedule(1.minute, 1.minute) {
+    system.scheduler.schedule(60.seconds, 60.seconds) {
       room.injectMessage(WorldRequest(sender = "server"))
     }
     rooms.find(_._1 == name).get // unsafe

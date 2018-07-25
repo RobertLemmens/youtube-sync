@@ -22,8 +22,8 @@ object Protocol {
   case class WorldRequest(sender: String) extends Message
   case class StatusMessage(sender: String, status: Int, time: Double, videoUrl: String) extends Message
   case class StatusUpdate(status: Int, time: Double, videoUrl: String) extends Message
-  case class PlaylistUpdate(playlist: Set[(Boolean, String)]) extends Message
+  case class PlaylistUpdate(playlist: List[(Boolean, String)]) extends Message
   case class MemberStatus(members: Set[(Boolean, String)]) extends Message
   case class SettingsUpdate(autoplay: Boolean) extends Message
-  case class World(status: Int, time: Double, videoUrl: String, autoplay: Boolean, allMembers: Set[(Boolean, String)], playlist: Set[(Boolean, String)]) extends Message
+  case class World(status: Int, time: Double, videoUrl: String, autoplay: Boolean, allMembers: Set[(Boolean, String)], playlist: List[(Boolean, String)]) extends Message
 }

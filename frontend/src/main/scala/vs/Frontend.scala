@@ -27,7 +27,7 @@ object Frontend {
   var isSmall = false // controlpanel size
   var isDark = false // theme boolean
   var following = "" // The room leader
-  var playlist = Set.empty[(Boolean, String)] // true = now playing, or next to play when Play is called
+  var playlist = List[(Boolean, String)]() // true = now playing, or next to play when Play is called
 
   /**
     * Entrypoint
@@ -229,8 +229,7 @@ object Frontend {
           }
       }
 
-      chat.send("/playlist")
-      chat.send("/members")
+      chat.send("/world")
       event
     }
     chat.onerror = { (event: org.scalajs.dom.raw.Event) ⇒
@@ -238,7 +237,6 @@ object Frontend {
       sendMessageButton.disabled = true
     }
     chat.onmessage = { (event: MessageEvent) ⇒
-
       val wsMsg = read[Protocol.Message](event.data.toString)
 
       wsMsg match {
@@ -261,8 +259,7 @@ object Frontend {
           }
         case Protocol.AddVideo(sender, url) =>
           appendLog(s"$sender added $url to the queue")
-          playlist += (false -> url)
-          updatePlayList(playlist)
+          chat.send("/playlist") // vraag nieuwe playlist op als er een video geadd is
         case Protocol.StatusRequest(sender) =>
           chat.send("/status " + player.getPlayerState() + " " + player.getCurrentTime() + " " + player.getVideoUrl())
         case Protocol.StatusMessage(sender, status, time, url) =>
@@ -419,7 +416,6 @@ object Frontend {
     setupUI(p)
     p.loadVideoById(playlist.find(_._1 == true).get._2, 0.0, "large")
     appendLog("playlist video: " + p.getVideoUrl())
-
   }
 
   /**
@@ -480,7 +476,7 @@ object Frontend {
     *
     * @param newList
     */
-  def updatePlayList(newList: Set[(Boolean, String)]): Unit = {
+  def updatePlayList(newList: List[(Boolean, String)]): Unit = {
     playlist = newList
     val playlistList = dom.document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
     playlistList.innerHTML = ""
