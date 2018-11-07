@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Video sync</title>
+    <title>Youtube Sync</title>
     <script type="text/javascript" src="http://cdn.jsdelivr.net/jquery/2.2.1/jquery.js"></script>
     <!--Import Google Icon Font-->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -43,6 +43,14 @@
     .collection{
         border: none;
     }
+    .chat-message {
+        margin-top: 2px !important;
+        padding:0 !important;
+    }
+    .badge-username {
+        margin-left: 0px !important;
+        margin-right:6px !important;
+    }
 </style>
 
 <div class="row login" id="login">
@@ -62,6 +70,19 @@
                     <input id="name" type="text">
                 </div>
                 <div class="form-field">
+                    <label>Display color</label>
+                </div>
+                <div class="form-field">
+                    <button id="red" class="btn-large red"></button>
+                    <button id="green" class="btn-large green"></button>
+                    <button id="pink" class="btn-large pink"></button>
+                    <button id="blue" class="btn-large blue"></button>
+                    <button id="purple" class="btn-large purple"></button>
+                    <button id="brown" class="btn-large brown"></button>
+                </div>
+
+                <div class="form-field">
+                    <br>
                     <button id="connectButton" class="btn-large red">Join</button>
                 </div>
             </div>
@@ -107,18 +128,18 @@
                     <button id="addButton" class="btn waves-effect waves-light red" type="button">
                         Add video
                     </button>
-                    <p id="playlistLabel" class="flow-text">Playlist: </p>
-                    <ul id="playlistList" class="collection">
-                        <li class="collection-item">Empty</li>
-                    </ul>
-                    <p class="flow-text" id="followP"></p>
-                    <p id="usersLabel" class="flow-text">Users:</p>
-                    <ul id="userList" class="collection">
-                        <li class="collection-item">Empty</li>
-                    </ul>
-                    <textarea id="logArea" style="height: 150px;"></textarea>
+                    <button id="showPlaylistButton" data-target="playlist-modal" class="right btn modal-trigger waves-effect waves-light red" type="button">
+                        Playlist
+                    </button>
+
+                    <div id="chatbox" class="chat"  style="overflow-y: scroll; height: 350px; margin-top: 10px">
+
+                    </div>
+
                     <input id="chatField" type="text">
                     <button id="sendMessageButton" class="btn waves-effect waves-light red" type="button">Send</button>
+                    <button id="showUsersButton" data-target="userlist-modal" class="right btn modal-trigger waves-effect red" type="button">Users</button>
+
                 </div>
 
             </div>
@@ -127,8 +148,39 @@
     </div>
 </div>
 
+<!-- Modal Structure -->
+<div id="playlist-modal" class="modal">
+    <div class="modal-content">
+        <p id="playlistLabel" class="flow-text">Playlist: </p>
+        <ul id="playlistList" class="collection">
+            <li class="collection-item">Empty</li>
+        </ul>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+    </div>
+</div>
+
+<!-- Modal Structure -->
+<div id="userlist-modal" class="modal">
+    <div class="modal-content">
+        <p id="usersLabel" class="flow-text">Users:</p>
+        <ul id="userList" class="collection">
+            <li class="collection-item">Empty</li>
+        </ul>
+    </div>
+    <div class="modal-footer">
+        <a href="#!" class="modal-close waves-effect waves-green btn-flat">Close</a>
+    </div>
+</div>
+
 <script type="text/javascript" src="frontend-fastopt.js"></script>
 
+<script type="text/javascript">
+    $(document).ready(function(){
+        $('.modal').modal();
+    });
+</script>
 
 </body>
 </html>

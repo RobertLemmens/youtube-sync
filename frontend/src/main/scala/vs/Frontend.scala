@@ -8,6 +8,7 @@ import org.scalajs.dom.raw._
 import protocols.Protocol
 import upickle.default._
 
+
 object Frontend {
 
   /**
@@ -24,10 +25,21 @@ object Frontend {
   val colorButton = dom.document.getElementById("invertColor").asInstanceOf[HTMLButtonElement]
   val controlPanelSize = dom.document.getElementById("controlPanelSizeButton").asInstanceOf[HTMLButtonElement]
 
+  // Color buttons
+  val redButton = dom.document.getElementById("red").asInstanceOf[HTMLButtonElement]
+  val greenButton = dom.document.getElementById("green").asInstanceOf[HTMLButtonElement]
+  val pinkButton = dom.document.getElementById("pink").asInstanceOf[HTMLButtonElement]
+  val blueButton = dom.document.getElementById("blue").asInstanceOf[HTMLButtonElement]
+  val purpleButton = dom.document.getElementById("purple").asInstanceOf[HTMLButtonElement]
+  val brownButton = dom.document.getElementById("brown").asInstanceOf[HTMLButtonElement]
+
+  val chatbox = new ChatBox
+
   var isSmall = false // controlpanel size
   var isDark = false // theme boolean
   var following = "" // The room leader
   var playlist = List[(Boolean, String)]() // true = now playing, or next to play when Play is called
+  var selectedColor = "red" //selected display color for username
 
   /**
     * Entrypoint
@@ -38,6 +50,7 @@ object Frontend {
     println("starting")
     addPlayer(document.body)
     hideMain()
+    chatbox.initChat()
   }
 
   /**
@@ -88,10 +101,11 @@ object Frontend {
     * @param player
     */
   def setupUI(player: Player): Unit = {
+    handleColorButtons()
     connectButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val userNameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
       val serverNameField = dom.document.getElementById("room").asInstanceOf[HTMLInputElement]
-      joinChat(userNameField.value, serverNameField.value, player)
+      joinChat(userNameField.value + ":" + selectedColor, serverNameField.value, player)
       document.getElementById("body").setAttribute("class", "white")
       hideLogin()
       showMain()
@@ -145,7 +159,7 @@ object Frontend {
     * @param player youtube player reference
     */
   def joinChat(name: String, room: String, player: Player): Unit = {
-    appendLog(s"Trying to join as '$name'...")
+    appendLog(s"Trying to join '$room'...")
     val chat = new WebSocket(getWebsocketUri(dom.document, name, room))
     chat.onopen = { (event: org.scalajs.dom.raw.Event) ⇒
       appendLog("Connection succesfull")
@@ -206,8 +220,7 @@ object Frontend {
           val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
           val playList = document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
           val userList = document.getElementById("userList").asInstanceOf[HTMLUListElement]
-          val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
-
+          val chatList = dom.document.getElementById("chatcollection").asInstanceOf[HTMLUListElement]
 
           if(!isDark) {
             mainCard.setAttribute("class", "card grey darken-4")
@@ -215,7 +228,8 @@ object Frontend {
             playlistLabel.setAttribute("class", "flow-text white-text")
             urlField.setAttribute("class", "white-text")
             chatField.setAttribute("class", "white-text")
-            logNode.setAttribute("class", "white-text")
+            chatList.setAttribute("class", "white-text")
+
             isDark = true
           } else {
             mainCard.setAttribute("class", "card")
@@ -223,7 +237,7 @@ object Frontend {
             playlistLabel.setAttribute("class", "flow-text")
             urlField.removeAttribute("class")
             chatField.removeAttribute("class")
-            logNode.removeAttribute("class")
+            chatList.removeAttribute("class")
 
             isDark = false
           }
@@ -241,24 +255,25 @@ object Frontend {
 
       wsMsg match {
         case Protocol.ChatMessage(sender, message) ⇒
-          appendLog(s"$sender said: $message")
+          appendChatMessage(message, sender)
         case Protocol.Joined(member, allMembers) ⇒
           updateUserList(allMembers)
-          appendLog(s"$member joined!")
+          appendChatMessage("Joined", member)
         case Protocol.Left(member, allMembers) ⇒
           updateUserList(allMembers)
-          appendLog(s"$member left!")
+          val splitted = member.split(":")
+          appendChatMessage("left", member)
         case Protocol.PlayVideo(sender) =>
-          appendLog(s"$sender started playback")
+          appendChatMessage("started playback", sender)
           player.playVideo()
         case Protocol.PauseVideo(sender) =>
-          appendLog(s"$sender paused playback")
+          appendChatMessage("paused playback", sender)
           player.getPlayerState() match {
             case Player.State.PAUSED => println("Already pasued")
             case Player.State.PLAYING => player.pauseVideo()
           }
         case Protocol.AddVideo(sender, url) =>
-          appendLog(s"$sender added $url to the queue")
+          appendChatMessage(s"added $url to the queue", sender)
           chat.send("/playlist") // vraag nieuwe playlist op als er een video geadd is
         case Protocol.StatusRequest(sender) =>
           chat.send("/status " + player.getPlayerState() + " " + player.getCurrentTime() + " " + player.getVideoUrl())
@@ -272,7 +287,7 @@ object Frontend {
         case Protocol.StatusUpdate(status, time, url) =>
           updatePlayer(player, status, time, url)
         case Protocol.LoadVideo(sender, videoId) =>
-          appendLog(s"$sender started playback for $videoId")
+          appendChatMessage(s"started playback for $videoId", sender)
           player.loadVideoById(videoId, 0.0, "large")
         case Protocol.PlaylistUpdate(newPlayList) =>
           updatePlayList(newPlayList)
@@ -298,7 +313,6 @@ object Frontend {
           updatePlayList(playlistt)
           setAutoPlay(autoplay)
         }
-
       }
     }
     chat.onclose = { (event: org.scalajs.dom.raw.Event) ⇒
@@ -389,6 +403,63 @@ object Frontend {
     }
   }
 
+  def handleColorButtons(): Unit = {
+    redButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "red"
+      redButton.innerHTML = "Selected"
+      greenButton.innerHTML = ""
+      pinkButton.innerHTML = ""
+      blueButton.innerHTML= ""
+      purpleButton.innerHTML= ""
+      brownButton.innerHTML= ""
+    }
+    greenButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "green"
+      redButton.innerHTML = ""
+      greenButton.innerHTML = "Selected"
+      pinkButton.innerHTML = ""
+      blueButton.innerHTML= ""
+      purpleButton.innerHTML= ""
+      brownButton.innerHTML= ""
+    }
+    pinkButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "pink"
+      redButton.innerHTML = ""
+      greenButton.innerHTML = ""
+      pinkButton.innerHTML = "Selected"
+      blueButton.innerHTML= ""
+      purpleButton.innerHTML= ""
+      brownButton.innerHTML= ""
+    }
+    blueButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "blue"
+      redButton.innerHTML = ""
+      greenButton.innerHTML = ""
+      pinkButton.innerHTML = ""
+      blueButton.innerHTML= "Selected"
+      purpleButton.innerHTML= ""
+      brownButton.innerHTML= ""
+    }
+    purpleButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "purple"
+      redButton.innerHTML = ""
+      greenButton.innerHTML = ""
+      pinkButton.innerHTML = ""
+      blueButton.innerHTML= ""
+      purpleButton.innerHTML= "Selected"
+      brownButton.innerHTML= ""
+    }
+    brownButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
+      selectedColor = "brown"
+      redButton.innerHTML = ""
+      greenButton.innerHTML = ""
+      pinkButton.innerHTML = ""
+      blueButton.innerHTML= ""
+      purpleButton.innerHTML= ""
+      brownButton.innerHTML= "Selected"
+    }
+  }
+
   /**
     * Sets autoplay and updates the UI accordingly
     *
@@ -444,9 +515,12 @@ object Frontend {
     * @param text
     */
   def appendLog(text: String): Unit = {
-    val logNode = dom.document.getElementById("logArea").asInstanceOf[HTMLTextAreaElement]
-    logNode.value += "\n"+text
-    logNode.scrollTop = logNode.scrollHeight
+    chatbox.addMessage(text, "system", "red")
+  }
+
+  def appendChatMessage(text: String, username: String): Unit = {
+    val splitted = username.split(":")
+    chatbox.addMessage(text, splitted(0), splitted(1))
   }
 
   /**
