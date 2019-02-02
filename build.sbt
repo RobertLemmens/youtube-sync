@@ -1,3 +1,4 @@
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
 val scalaJsDomV = "0.9.5"
 val akkaHttpV = "10.1.1"
@@ -16,7 +17,7 @@ lazy val frontend = project.in(file("frontend"))
       "com.lihaoyi" %%% "upickle" % "0.5.1"
     ),
     scalaJSUseMainModuleInitializer := true
-  )
+  ).dependsOn(sharedJS)
 
 lazy val backend = project.in(file("backend"))
   .settings(
@@ -32,8 +33,14 @@ lazy val backend = project.in(file("backend"))
       Seq(f1.data, f1SourceMap)
     }.taskValue,
     watchSources ++= (watchSources in frontend).value
+  ).dependsOn(sharedJVM)
+
+lazy val shared = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Pure).settings(
+    libraryDependencies ++= Seq(
+        "com.lihaoyi" %%% "upickle" % "0.5.1"
+     )
   )
 
-lazy val root =
-  project.in(file("."))
-    .aggregate(frontend, backend)
+lazy val sharedJVM = shared.jvm
+lazy val sharedJS = shared.js

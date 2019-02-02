@@ -1,15 +1,10 @@
 package protocols
 
 object Protocol {
-//  case object Play extends Message
-//  case object Pause extends Message
-//  case object Next extends Message
-//  case object Previous extends Message
-//  case class Add(url: String) extends Message
-//  case class Remove(url: String) extends Message
+
+  import upickle.default._
 
   sealed trait Message
-  import upickle.default._
   implicit val readWriter: ReadWriter[Message] = ReadWriter.merge(
     macroRW[Left], macroRW[Joined], macroRW[ChatMessage],
     macroRW[PlayVideo], macroRW[PauseVideo], macroRW[AddVideo],
