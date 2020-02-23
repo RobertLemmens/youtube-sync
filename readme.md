@@ -53,4 +53,4 @@ This will build a standalone jar ready for deployment.
 
 ## Todo
 * DONE -  Create a better build. One that starts backend and serves the generated frontend HTML through the backend for easy deployment.
-* Improve functionality
+* One day maybe refactor this application to follow functional programming principles

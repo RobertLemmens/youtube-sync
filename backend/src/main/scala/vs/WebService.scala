@@ -19,7 +19,7 @@ class WebService(implicit system: ActorSystem) extends Directives{
   import system.dispatcher
 
   /**
-    * Routing, defines our uri schema and what they do.
+    * Routing, defines our uri schema and what they do. Also explicitly exposes the resources used for styling.
     *
     * @return
     */

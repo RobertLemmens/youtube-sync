@@ -21,25 +21,16 @@ object Frontend {
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
-  val connectButton = dom.document.getElementById("connectButton").asInstanceOf[HTMLButtonElement]
   val colorButton = dom.document.getElementById("invertColor").asInstanceOf[HTMLButtonElement]
   val controlPanelSize = dom.document.getElementById("controlPanelSizeButton").asInstanceOf[HTMLButtonElement]
 
-  // Color buttons
-  val redButton = dom.document.getElementById("red").asInstanceOf[HTMLButtonElement]
-  val greenButton = dom.document.getElementById("green").asInstanceOf[HTMLButtonElement]
-  val pinkButton = dom.document.getElementById("pink").asInstanceOf[HTMLButtonElement]
-  val blueButton = dom.document.getElementById("blue").asInstanceOf[HTMLButtonElement]
-  val purpleButton = dom.document.getElementById("purple").asInstanceOf[HTMLButtonElement]
-  val brownButton = dom.document.getElementById("brown").asInstanceOf[HTMLButtonElement]
-
   val chatbox = new ChatBox
+  val setupPage = new SetupPage
 
   var isSmall = false // controlpanel size
   var isDark = false // theme boolean
   var following = "" // The room leader
   var playlist = List[(Boolean, String)]() // true = now playing, or next to play when Play is called
-  var selectedColor = "red" //selected display color for username
 
   /**
     * Entrypoint
@@ -51,14 +42,6 @@ object Frontend {
     addPlayer(document.body)
     hideMain()
     chatbox.initChat()
-  }
-
-  /**
-    * Hide the login interface (joining a room). When you join a room this gets called and the main interface is shown.
-    *
-    */
-  def hideLogin(): Unit = {
-    document.getElementById("login").setAttribute("style", "display: none;")
   }
 
   /**
@@ -77,6 +60,13 @@ object Frontend {
     document.getElementById("mainRow").removeAttribute("style")
   }
 
+  /**
+    * Hide the login interface (joining a room). When you join a room this gets called and the main interface is shown.
+    *
+    */
+  def hideLogin(): Unit = {
+    document.getElementById("login").setAttribute("style", "display: none;")
+  }
 
   /**
     * Creates a youtube player. Basically the frontend entry point. (this gets called in main).
@@ -96,20 +86,30 @@ object Frontend {
   }
 
   /**
-    * Frontend setup.
+    * This function gets bound to the onclick method in SetupPage. It has some context we dont need there so we pass it
+    * when initializing the setupPage
     *
+    * @param userNameField
+    * @param serverNameField
+    * @param selectedColor
     * @param player
     */
-  def setupUI(player: Player): Unit = {
-    handleColorButtons()
-    connectButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
-      val userNameField = dom.document.getElementById("name").asInstanceOf[HTMLInputElement]
-      val serverNameField = dom.document.getElementById("room").asInstanceOf[HTMLInputElement]
+  def connectionSetup(userNameField: HTMLInputElement, serverNameField: HTMLInputElement, selectedColor: String, player: Player): Unit = {
+    if(userNameField.value.length < 20 && serverNameField.value.length < 20) { // max length of 20 for name and server
       joinChat(userNameField.value + ":" + selectedColor, serverNameField.value, player)
       document.getElementById("body").setAttribute("class", "white")
       hideLogin()
       showMain()
     }
+  }
+
+  /**
+    * Frontend setup.
+    *
+    * @param player
+    */
+  def setupUI(player: Player): Unit = {
+    setupPage.initSetupPage(connectionSetup(_, _, _,player))
     controlPanelSize.onclick = { (event: org.scalajs.dom.raw.Event) =>
       val icon = dom.document.getElementById("controlPanelSizeIcon")
       icon.innerHTML = ""
@@ -178,10 +178,12 @@ object Frontend {
         }
       }
       sendMessageButton.onclick = { (event: org.scalajs.dom.raw.Event) ⇒
-        chat.send(chatField.value)
-        chatField.value = ""
-        chatField.focus()
-        event.preventDefault()
+        if(!chatField.value.replaceAll("\\s+","").isEmpty) {
+          chat.send(chatField.value)
+          chatField.value = ""
+          chatField.focus()
+          event.preventDefault()
+        }
       }
       playButton.onclick = { (event: org.scalajs.dom.raw.Event) =>
         chat.send("/play")
@@ -213,34 +215,7 @@ object Frontend {
       }
       colorButton.onclick = {
         event: org.scalajs.dom.raw.Event =>
-          val mainCard = document.getElementById("controlPanel")
-          val playlistLabel =  document.getElementById("playlistLabel")
-          val usersLabel = document.getElementById("usersLabel")
-          val urlField = document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
-          val chatField = dom.document.getElementById("chatField").asInstanceOf[HTMLInputElement]
-          val playList = document.getElementById("playlistList").asInstanceOf[HTMLUListElement]
-          val userList = document.getElementById("userList").asInstanceOf[HTMLUListElement]
-          val chatList = dom.document.getElementById("chatcollection").asInstanceOf[HTMLUListElement]
-
-          if(!isDark) {
-            mainCard.setAttribute("class", "card grey darken-4")
-            usersLabel.setAttribute("class", "flow-text white-text")
-            playlistLabel.setAttribute("class", "flow-text white-text")
-            urlField.setAttribute("class", "white-text")
-            chatField.setAttribute("class", "white-text")
-            chatList.setAttribute("class", "white-text")
-
-            isDark = true
-          } else {
-            mainCard.setAttribute("class", "card")
-            usersLabel.setAttribute("class", "flow-text")
-            playlistLabel.setAttribute("class", "flow-text")
-            urlField.removeAttribute("class")
-            chatField.removeAttribute("class")
-            chatList.removeAttribute("class")
-
-            isDark = false
-          }
+          StylingHandler.toggleDarkMode()
       }
 
       chat.send("/world")
@@ -400,63 +375,6 @@ object Frontend {
         player.stopVideo()
     } else if(player.getCurrentTime() != time) {
       player.seekTo(time, true)
-    }
-  }
-
-  def handleColorButtons(): Unit = {
-    redButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "red"
-      redButton.innerHTML = "Selected"
-      greenButton.innerHTML = ""
-      pinkButton.innerHTML = ""
-      blueButton.innerHTML= ""
-      purpleButton.innerHTML= ""
-      brownButton.innerHTML= ""
-    }
-    greenButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "green"
-      redButton.innerHTML = ""
-      greenButton.innerHTML = "Selected"
-      pinkButton.innerHTML = ""
-      blueButton.innerHTML= ""
-      purpleButton.innerHTML= ""
-      brownButton.innerHTML= ""
-    }
-    pinkButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "pink"
-      redButton.innerHTML = ""
-      greenButton.innerHTML = ""
-      pinkButton.innerHTML = "Selected"
-      blueButton.innerHTML= ""
-      purpleButton.innerHTML= ""
-      brownButton.innerHTML= ""
-    }
-    blueButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "blue"
-      redButton.innerHTML = ""
-      greenButton.innerHTML = ""
-      pinkButton.innerHTML = ""
-      blueButton.innerHTML= "Selected"
-      purpleButton.innerHTML= ""
-      brownButton.innerHTML= ""
-    }
-    purpleButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "purple"
-      redButton.innerHTML = ""
-      greenButton.innerHTML = ""
-      pinkButton.innerHTML = ""
-      blueButton.innerHTML= ""
-      purpleButton.innerHTML= "Selected"
-      brownButton.innerHTML= ""
-    }
-    brownButton.onclick =  (event: org.scalajs.dom.raw.Event) => {
-      selectedColor = "brown"
-      redButton.innerHTML = ""
-      greenButton.innerHTML = ""
-      pinkButton.innerHTML = ""
-      blueButton.innerHTML= ""
-      purpleButton.innerHTML= ""
-      brownButton.innerHTML= "Selected"
     }
   }
 
