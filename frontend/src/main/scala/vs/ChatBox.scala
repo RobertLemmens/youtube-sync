@@ -6,7 +6,7 @@ import dom.{KeyboardEvent, Node, document, html}
 
 class ChatBox {
 
-  def initChat(): Unit = {
+  def init(): Unit = {
     val mainDiv = document.getElementById("chatbox")
     val mainList = document.createElement("ul")
     mainList.setAttribute("class","")

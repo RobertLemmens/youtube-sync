@@ -20,14 +20,11 @@ object Frontend {
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
-  val colorButton = dom.document.getElementById("invertColor").asInstanceOf[HTMLButtonElement]
-  val controlPanelSize = dom.document.getElementById("controlPanelSizeButton").asInstanceOf[HTMLButtonElement]
 
   val chatbox = new ChatBox
   val setupPage = new SetupPage
+  val mainpage = new MainPage
 
-  var isSmall = false // controlpanel size
-  var isDark = false // theme boolean
   var following = "" // The room leader
   var playlist = List[(Boolean, String)]() // true = now playing, or next to play when Play is called
 
@@ -40,7 +37,8 @@ object Frontend {
     println("starting")
     addPlayer(document.body)
     hideMain()
-    chatbox.initChat()
+    mainpage.init()
+    chatbox.init()
   }
 
   /**
@@ -99,54 +97,6 @@ object Frontend {
       document.getElementById("body").setAttribute("class", "white")
       hideLogin()
       showMain()
-    }
-  }
-
-  /**
-    * Frontend setup.
-    *
-    * @param player
-    */
-  def setupUI(player: Player): Unit = {
-    setupPage.initSetupPage(connectionSetup(_, _, _,player))
-    controlPanelSize.onclick = { (event: org.scalajs.dom.raw.Event) =>
-      val icon = dom.document.getElementById("controlPanelSizeIcon")
-      icon.innerHTML = ""
-      if(isSmall) {
-        icon.appendChild(document.createTextNode("keyboard_arrow_right"))
-        val playerContainer = document.getElementById("playerContainer")
-        val controlPanelContainer = document.getElementById("controlPanelContainer")
-        val nonPlaybackItems = document.getElementById("nonPlaybackItems")
-        val title = document.getElementById("titleText")
-        title.innerHTML = ""
-        title.appendChild(document.createTextNode("Youtube-Sync"))
-        pauseButton.removeAttribute("style")
-        playButton.removeAttribute("style")
-        nextButton.removeAttribute("style")
-        enableAutoPlayButton.removeAttribute("style")
-        disableAutoPlayButton.removeAttribute("style")
-        nonPlaybackItems.removeAttribute("style")
-        playerContainer.setAttribute("class", "col s9")
-        controlPanelContainer.setAttribute("class", "col s3")
-        isSmall = false
-      } else {
-        icon.appendChild(document.createTextNode("keyboard_arrow_left"))
-        val playerContainer = document.getElementById("playerContainer")
-        val controlPanelContainer = document.getElementById("controlPanelContainer")
-        val nonPlaybackItems = document.getElementById("nonPlaybackItems")
-        val title = document.getElementById("titleText")
-        title.innerHTML = ""
-        title.appendChild(document.createTextNode("YS"))
-        pauseButton.setAttribute("style", "width:100%; margin-top:5px;")
-        playButton.setAttribute("style", "width:100%; margin-top:5px;")
-        nextButton.setAttribute("style", "width:100%; margin-top:5px; ")
-        enableAutoPlayButton.setAttribute("style", "width:100%; margin-top:5px;")
-        disableAutoPlayButton.setAttribute("style", "width:100%; margin-top:5px;")
-        nonPlaybackItems.setAttribute("style", "display: none;")
-        playerContainer.setAttribute("class", "col s11")
-        controlPanelContainer.setAttribute("class", "col s1")
-        isSmall = true
-      }
     }
   }
 
@@ -211,10 +161,6 @@ object Frontend {
           chat.send("/settings false")
           disableAutoPlayButton.setAttribute("disabled", "true")
           enableAutoPlayButton.removeAttribute("disabled")
-      }
-      colorButton.onclick = {
-        event: org.scalajs.dom.raw.Event =>
-          StylingHandler.toggleDarkMode()
       }
 
       chat.send("/world")
@@ -401,7 +347,9 @@ object Frontend {
     */
   def onPlayerReady(event: YTEvent): Unit = {
     val p = event.target.asInstanceOf[Player]
-    setupUI(p)
+    // setup components that can initialize once the player is ready
+    setupPage.initSetupPage(connectionSetup(_, _, _,p))
+
     p.loadVideoById(playlist.find(_._1 == true).get._2, 0.0, "large")
     appendLog("playlist video: " + p.getVideoUrl())
   }
