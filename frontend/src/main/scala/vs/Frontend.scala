@@ -5,9 +5,8 @@ import dom.{KeyboardEvent, document, html}
 
 import scala.scalajs.js
 import org.scalajs.dom.raw._
-import protocols.Protocol
 import upickle.default._
-
+import protocols.Protocol
 
 object Frontend {
 
@@ -281,8 +280,8 @@ object Frontend {
         case Protocol.WorldRequest(sender) => {
           chat.send("/world") // vraag world aan zodra de server dit vraagt te doen.
         }
-          // a world message is the total current state whereby the player state is taken from the
-          // room leader
+        // a world message is the total current state whereby the player state is taken from the
+        // room leader
         case Protocol.World(status, time, videoUrl, autoplay, allMembers, playlistt) => {
           updateUserList(allMembers)
           updatePlayList(playlistt)

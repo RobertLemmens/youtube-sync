@@ -2,8 +2,10 @@ package protocols
 
 
 object Protocol {
-  sealed trait Message
+
   import upickle.default._
+
+  sealed trait Message
   implicit val readWriter: ReadWriter[Message] = ReadWriter.merge(
     macroRW[Left], macroRW[Joined], macroRW[ChatMessage],
     macroRW[PlayVideo], macroRW[PauseVideo], macroRW[AddVideo],
