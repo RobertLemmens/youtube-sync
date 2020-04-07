@@ -17,6 +17,7 @@ object StylingHandler {
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
 
+  // zet duplicate code in een setDefaultStyle
   def togglePanelSize(isSmall: Boolean): Boolean = {
       val icon = dom.document.getElementById("controlPanelSizeIcon")
       icon.innerHTML = ""
