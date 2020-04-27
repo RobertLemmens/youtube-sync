@@ -10,7 +10,7 @@ import scala.util.{Failure, Success}
   * Application entry point
   *
   */
-object Boot extends App {
+object Application extends App {
   implicit val system: ActorSystem = ActorSystem()
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
