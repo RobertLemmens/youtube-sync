@@ -15,7 +15,7 @@ object Application extends App {
   import system.dispatcher
   implicit val materializer: ActorMaterializer = ActorMaterializer()
 
-  val interface = "localhost"
+  val interface = "0.0.0.0"
   val port = 8080
 
   val service = new WebService
