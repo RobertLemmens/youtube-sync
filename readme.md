@@ -52,5 +52,5 @@ assembly
 This will build a standalone jar ready for deployment.
 
 ## Todo
-* DONE -  Create a better build. One that starts backend and serves the generated frontend HTML through the backend for easy deployment.
-* One day maybe refactor this application to follow functional programming principles
+* ~~Create a better build. One that starts backend and serves the generated frontend HTML through the backend for easy deployment.~~ Done.
+* Refactor towards a somewhat more functional construct

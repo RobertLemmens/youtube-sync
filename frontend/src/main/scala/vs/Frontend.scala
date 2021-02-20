@@ -44,6 +44,7 @@ object Frontend {
   /**
     * Hide the main interface.
     *
+    *
     */
   def hideMain(): Unit = {
     document.getElementById("mainRow").setAttribute("style", "display: none;")
@@ -145,7 +146,9 @@ object Frontend {
       }
       addButton.onclick = { event: org.scalajs.dom.raw.Event =>
         val urlField = dom.document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
-        val videoId = urlField.value.split("v=")(1).split("&")(0)
+        val videoId =
+          if(urlField.value.contains("v=")) urlField.value.split("v=")(1).split("&")(0)
+          else urlField.value.split("/").last.split("\\?")(0)
         appendLog("sending server: " + videoId)
         chat.send("/add false " + videoId)
         urlField.value = ""
