@@ -17,6 +17,10 @@ If autoplay is on or next is called and there is no more video in the playlist, 
 
 Running version can be found at www.youtube-sync.nl
 ## Usage
+### Build using docker
+In the root of the project there is a `build.sh` file. This will build the project inside a container, output a jar, and finally build a docker image with the app called `rlemmens/youtube-sync` with tag latest.
+This is the easiest way of getting started without needing scala or sbt on your local machine.
+
 ### Developing
 First fire up a SBT session in the root folder. Then:
 ```scala
