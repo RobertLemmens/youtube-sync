@@ -13,6 +13,8 @@
 .idea/*
 
 *.iml
+.metals/
+.vscode/
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
