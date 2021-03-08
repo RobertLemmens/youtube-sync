@@ -23,6 +23,8 @@ Running version can be found at www.youtube-sync.nl
 In the root of the project there is a `build.sh` file. This will build the project inside a container, output a jar, and finally build a docker image with the app called `rlemmens/youtube-sync` with tag latest.
 This is the easiest way of getting started without needing scala or sbt on your local machine.
 
+When the build completes you can run the container with `run.sh`. This will start the application on localhost:8080. 
+
 ### Developing
 First fire up a SBT session in the root folder. Then:
 ```scala
