@@ -17,7 +17,7 @@ The server status ticks are every 5 second. This means every 5 seconds all users
 
 If autoplay is on or next is called and there is no more video in the playlist, elevator music will be played.
 
-Running version can be found at www.youtube-sync.nl
+Running version can be found at https://youtube-sync.nl
 ## Usage
 ### Build using docker
 In the root of the project there is a `build.sh` file. This will build the project inside a container, output a jar, and finally build a docker image with the app called `rlemmens/youtube-sync` with tag latest.
