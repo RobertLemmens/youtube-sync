@@ -99,10 +99,13 @@ object Room {
       }
 
       def addVideo(msg: ReceivedMessage): Unit = {
-        val playing = msg.message.split(" ")(1).toBoolean
-        val videoId = msg.message.split(" ")(2)
-        playlist += (playing -> videoId)
-        dispatch(msg.toAddMessage)
+          val messageParts = msg.message.split(" ")
+          if (messageParts.length == 3 ) {
+          val playing = msg.message.split(" ")(1).toBoolean
+          val videoId = msg.message.split(" ")(2)
+          playlist += (playing -> videoId)
+          dispatch(msg.toAddMessage)
+        }
       }
 
       def updateLeaderStatus(state: Int, time: Double, url: String): Unit = {

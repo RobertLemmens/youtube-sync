@@ -20,6 +20,7 @@ object Frontend {
   val sendMessageButton = dom.document.getElementById("sendMessageButton").asInstanceOf[HTMLButtonElement]
   val enableAutoPlayButton = dom.document.getElementById("enableAutoplayButton").asInstanceOf[HTMLButtonElement]
   val disableAutoPlayButton = dom.document.getElementById("disableAutoplayButton").asInstanceOf[HTMLButtonElement]
+  val urlField = dom.document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
 
   val chatbox = new ChatBox
   val setupPage = new SetupPage
@@ -144,14 +145,25 @@ object Frontend {
       nextButton.onclick = { event: org.scalajs.dom.raw.Event =>
         chat.send("/next")
       }
+      urlField.onkeyup = { event: org.scalajs.dom.raw.Event => 
+        if (urlField.value.isEmpty()) {
+          addButton.disabled = true;
+        } else {
+          addButton.disabled = false;
+        }
+      }
       addButton.onclick = { event: org.scalajs.dom.raw.Event =>
-        val urlField = dom.document.getElementById("videoUrlField").asInstanceOf[HTMLInputElement]
-        val videoId =
-          if(urlField.value.contains("v=")) urlField.value.split("v=")(1).split("&")(0)
-          else urlField.value.split("/").last.split("\\?")(0)
-        appendLog("sending server: " + videoId)
-        chat.send("/add false " + videoId)
-        urlField.value = ""
+        if (urlField.value.isEmpty()) {
+          appendLog("Video url field is empty")
+        } else {
+          val videoId =
+            if(urlField.value.contains("v=")) urlField.value.split("v=")(1).split("&")(0)
+            else urlField.value.split("/").last.split("\\?")(0)
+          appendLog("sending server: " + videoId)
+          chat.send("/add false " + videoId)
+          urlField.value = ""
+          addButton.disabled = true;
+        }
       }
       enableAutoPlayButton.onclick = {
         event: org.scalajs.dom.raw.Event =>
