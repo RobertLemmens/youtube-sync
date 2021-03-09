@@ -16,6 +16,10 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
+  tls:
+  - hosts:
+    - youtube-sync.nl
+    secretName: ys-tls
   rules:
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
