@@ -145,7 +145,7 @@ object Frontend {
       nextButton.onclick = { event: org.scalajs.dom.raw.Event =>
         chat.send("/next")
       }
-      urlField.onkeyup = { event: org.scalajs.dom.raw.Event => 
+      urlField.oninput = { event: org.scalajs.dom.raw.Event => 
         if (urlField.value.isEmpty()) {
           addButton.disabled = true;
         } else {
