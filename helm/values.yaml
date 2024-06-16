@@ -8,6 +8,8 @@ image:
   repository: rlemmens/youtube-sync
   pullPolicy: IfNotPresent
   tag: "0.1.0"
+podAnnotations:
+  - linkerd.io/inject: enabled
 
 service:
   type: ClusterIP
