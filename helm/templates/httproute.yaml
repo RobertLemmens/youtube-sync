@@ -1,0 +1,25 @@
+{{- if .Values.httproute.enabled -}}
+{{- $fullName := include "..fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "..labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  hostnames:
+    - {{ .Values.httproute.host }}
+  parentRefs:
+    - name: contour
+  rules:
+    - backendRefs: 
+      - name: {{ $fullName }}
+        group: ""
+        port: {{ $svcPort }}
+        weight: 1
+  {{- end }}
